@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Şehir Macerası - Karakter Oyunu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
+        body { 
+            background: #1a1a2e; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 100vw; 
+            height: 100vh;
+        }
+        #gameContainer { 
+            position: relative; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+        }
+        canvas { 
+            display: block; 
+            background: #2d5016; 
+        }
+
+        /* UI Overlay */
+        #ui {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        /* Altın Gösterge */
+        #goldDisplay {
+            position: absolute;
+            top: 10px; left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #ffd700;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: auto;
+            border: 2px solid #ffd700;
+        }
+
+        /* Karakter Bilgisi */
+        #charInfo {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            max-width: 200px;
+            pointer-events: auto;
+            border: 2px solid #444;
+        }
+
+        /* Mesaj Kutusu */
+        #messageBox {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 15px;
+            font-size: 14px;
+            max-width: 80%;
+            text-align: center;
+            display: none;
+            pointer-events: auto;
+            border: 2px solid #666;
+            z-index: 100;
+        }
+
+        /* Kontroller */
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            pointer-events: auto;
+        }
+
+        .d-pad {
+            width: 120px; height: 120px;
+            position: relative;
+        }
+
+        .d-btn {
+            position: absolute;
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            cursor: pointer;
+        }
+        .d-btn:active { background: rgba(255,255,255,0.5); }
+        .d-up { top: 0; left: 40px; }
+        .d-down { bottom: 0; left: 40px; }
+        .d-left { top: 40px; left: 0; }
+        .d-right { top: 40px; right: 0; }
+
+        #actionButtons {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.5);
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .action-btn:active { transform: scale(0.95); }
+        #btnJump { background: rgba(255,100,100,0.6); }
+        #btnCrouch { background: rgba(100,100,255,0.6); }
+        #btnAction { background: rgba(100,255,100,0.6); width: 70px; height: 70px; }
+        #btnSpecial { background: rgba(255,215,0,0.7); width: 70px; height: 70px; }
+        .menu-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+        .mini-btn { background:#5c5c95; color:white; border:2px solid #7f7fb8; padding:10px 16px; border-radius:10px; cursor:pointer; font-size:14px; }
+        .mini-btn:active { transform: scale(0.98); }
+        .char-header { color:white; text-align:center; max-width: 680px; margin-bottom: 12px; line-height:1.45; }
+        .char-grid { padding: 0 10px 10px; }
+
+        /* Menüler */
+        .menu-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 1000;
+        }
+
+        .menu-title {
+            color: #ffd700;
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .menu-btn {
+            background: #4a4a8a;
+            color: white;
+            border: 2px solid #6a6aaa;
+            padding: 12px 30px;
+            margin: 8px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            min-width: 200px;
+            text-align: center;
+        }
+        .menu-btn:hover { background: #5a5a9a; }
+        .menu-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .char-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 90%;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .char-card {
+            background: #2a2a4a;
+            border: 2px solid #4a4a8a;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .char-card:hover { transform: scale(1.05); border-color: #ffd700; }
+        .char-card .char-name { font-weight: bold; color: #ffd700; margin-bottom: 5px; }
+        .char-card .char-price { color: #aaa; font-size: 12px; }
+        .char-card .char-desc { color: #ccc; font-size: 11px; margin-top: 5px; }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            max-width: 90%;
+        }
+
+        .shop-item {
+            background: #2a2a4a;
+            border: 2px solid #4a4a8a;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+        }
+        .shop-item:hover { border-color: #ffd700; }
+
+        #jobMenu, #shopMenu, #charSelect, #mainMenu { display: none; }
+
+        .npc-dialogue {
+            position: absolute;
+            background: rgba(255,255,255,0.95);
+            color: black;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            max-width: 150px;
+            text-align: center;
+            pointer-events: none;
+            border: 2px solid #333;
+            z-index: 50;
+        }
+        .npc-dialogue::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid rgba(255,255,255,0.95);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #minimap {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            width: 120px;
+            height: 120px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #444;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        #saveStatus {
+            position: absolute;
+            top: 52px;
+            right: 10px;
+            background: rgba(0,0,0,0.65);
+            color: #8cff8c;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        #loginOverlay input {
+            width: min(320px, 80vw);
+            padding: 12px 14px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border: 2px solid #6a6aaa;
+            background: rgba(255,255,255,0.96);
+            color: #111;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #loginOverlay .small-note {
+            color: #d6d6ff;
+            font-size: 12px;
+            max-width: 420px;
+            line-height: 1.5;
+            text-align: center;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui">
+            <div id="goldDisplay">💰 Altın: 0</div>
+            <div id="charInfo">Karakter: -</div>
+            <canvas id="minimap"></canvas>
+            <div id="messageBox"></div>
+
+            <div id="saveStatus">● Giriş bekleniyor</div>
+
+            <div id="loginOverlay" class="menu-overlay" style="display:flex; z-index:2000;">
+                <div class="menu-title">🔐 Giriş Yap</div>
+                <div style="color:white; max-width:80%; text-align:center; line-height:1.6; margin-bottom:10px;">
+                    Kullanıcı adını yaz ve gir. Coin, satın alınan karakterler ve son seçimin kaydedilir.
+                </div>
+                <input id="usernameInput" type="text" maxlength="20" placeholder="Kullanıcı adı">
+                <button class="menu-btn" id="btnLogin">Giriş / Kaydet</button>
+                <div id="loginStatus" class="small-note"></div>
+                <div class="small-note">Not: Bu sistem parola yerine kullanıcı adı profili kullanır. Firebase kayıtları için uygun bir web yayını gerekir; çevrimdışı olursa yerel kayda düşer.</div>
+            </div>
+
+            <div id="controls">
+                <div class="d-pad">
+                    <div class="d-btn d-up" id="btnUp">▲</div>
+                    <div class="d-btn d-down" id="btnDown">▼</div>
+                    <div class="d-btn d-left" id="btnLeft">◀</div>
+                    <div class="d-btn d-right" id="btnRight">▶</div>
+                </div>
+            </div>
+
+            <div id="actionButtons">
+                <button class="action-btn" id="btnJump">Zıpla</button>
+                <button class="action-btn" id="btnCrouch">Eğil</button>
+                <button class="action-btn" id="btnAction">Etkileşim</button>
+                <button class="action-btn" id="btnSpecial">Özel</button>
+            </div>
+        </div>
+
+        <!-- Ana Menü -->
+        <div id="mainMenu" class="menu-overlay" style="display:flex;">
+            <div class="menu-title">🏙️ ŞEHİR MACERASI</div>
+            <button class="menu-btn" onclick="showCharSelect()">🎮 Oyuna Başla</button>
+            <button class="menu-btn" onclick="showShop()">🛒 Dükkan</button>
+            <button class="menu-btn" onclick="showHowToPlay()">❓ Nasıl Oynanır?</button>
+        </div>
+
+        <!-- Karakter Seçim -->
+        <div id="charSelect" class="menu-overlay">
+            <button class="back-btn" onclick="showMainMenu()">◀ Geri</button>
+            <button class="back-btn" style="left:auto; right:10px; background:#6b4cff;" onclick="showShop()">🛒 Dükkana Dön</button>
+            <div class="menu-title">🎭 Karakter Seç</div>
+            <div class="char-header">Karakterleri kartlardan seç. Her karakterin özel yeteneği aşağıda yazıyor. Özel butonla kullanılır.</div>
+            <div class="char-grid" id="charGrid"></div>
+        </div>
+
+        <!-- Dükkan -->
+        <div id="shopMenu" class="menu-overlay">
+            <button class="back-btn" onclick="showMainMenu()">◀ Geri</button>
+            <button class="back-btn" style="left:auto; right:10px; background:#6b4cff;" onclick="showCharSelect()">🎭 Karakterler</button>
+            <div class="menu-title">🛒 Dükkan</div>
+            <div class="shop-grid" id="shopGrid"></div>
+        </div>
+
+        <!-- İş Menüsü -->
+        <div id="jobMenu" class="menu-overlay">
+            <button class="back-btn" onclick="closeJobMenu()">◀ Geri</button>
+            <div class="menu-title" id="jobTitle">💼 İş Seç</div>
+            <div id="jobContent"></div>
+        </div>
+
+        <!-- Nasıl Oynanır -->
+        <div id="howToPlay" class="menu-overlay" style="display:none;">
+            <button class="back-btn" onclick="showMainMenu()">◀ Geri</button>
+            <div class="menu-title">❓ Nasıl Oynanır?</div>
+            <div style="color:white; max-width:80%; text-align:center; line-height:1.6;">
+                <p>🎮 <b>Hareket:</b> Yön tuşları veya WASD</p>
+                <p>⬆️ <b>Zıpla:</b> Space / Zıpla butonu</p>
+                <p>⬇️ <b>Eğil:</b> Ctrl / Eğil butonu</p>
+                <p>🅰️ <b>Etkileşim:</b> E / Etkileşim butonu</p>
+                <p>✨ <b>Özel:</b> Q / Özel butonu</p>
+                <p>💰 <b>İş yap:</b> Dükkanlara git ve çalış</p>
+                <p>⚠️ <b>Dikkat:</b> Hırsızlar ve polisler var!</p>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+// ==================== FIREBASE ====================
+const firebaseConfig = {
+    apiKey: "AIzaSyAfeUYlfREYXH-oHgt9RqOkKQMV4JOGRZ0",
+    authDomain: "sdfdf-3b247.firebaseapp.com",
+    projectId: "sdfdf-3b247",
+    storageBucket: "sdfdf-3b247.firebasestorage.app",
+    messagingSenderId: "242181377675",
+    appId: "1:242181377675:web:0c9e21e168ab48af390e8e",
+    measurementId: "G-QKV5KXKT2B"
+};
+
+let app = null;
+let db = null;
+let firebaseReady = false;
+
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    firebaseReady = true;
+} catch (err) {
+    console.warn("Firebase başlatılamadı, yerel kayıt kullanılacak.", err);
+}
+
+// ==================== OYUN VERİLERİ ====================
+const CHARACTERS = {
+    poyraz: {
+        name: "Poyraz",
+        price: 0,
+        color: "#8B4513",
+        speed: 1,
+        emoji: "😭",
+        desc: "Hemen yere düşer, kafasında kaka var, ağlar",
+        special: "yere_duser",
+        size: 1
+    },
+    asya: {
+        name: "Asya",
+        price: 5,
+        color: "#FF69B4",
+        speed: 5,
+        emoji: "🪨",
+        desc: "Boyu 1cm, NPC'ler görmez, sesini duyar",
+        special: "ucucu",
+        size: 0.3
+    },
+    tuna: {
+        name: "Tuna",
+        price: 10,
+        color: "#4169E1",
+        speed: 10,
+        emoji: "💪",
+        desc: "Kemerle saldırır, Asya ile evli",
+        special: "kemer",
+        size: 1
+    },
+    aydin: {
+        name: "Aydın",
+        price: 25,
+        color: "#FF6347",
+        speed: 30,
+        emoji: "🥊",
+        desc: "Tek kaşlı, koca ağızlı, güreşte iyi",
+        special: "yumruk",
+        size: 1.2
+    },
+    therock: {
+        name: "The Rock",
+        price: 50,
+        color: "#8B0000",
+        speed: 20,
+        emoji: "🪨",
+        desc: "Asya'nın babası, kaslı, kel, kaş kaldırma",
+        special: "kas_kaldir",
+        size: 1.4
+    },
+    irfan: {
+        name: "İrfan Enişte",
+        price: 75,
+        color: "#556B2F",
+        speed: 15,
+        emoji: "😴",
+        desc: "Çok uyur, horlar, burun delikleri büyük",
+        special: "horlama",
+        size: 1.3
+    },
+    kelodayi: {
+        name: "Kelo Dayı",
+        price: 100,
+        color: "#DAA520",
+        speed: 10,
+        emoji: "🌪️",
+        desc: "Geğirirse deprem olur, iğrenç",
+        special: "gegirme",
+        size: 1.2
+    },
+    yogurtnine: {
+        name: "Yoğurt Nine",
+        price: 125,
+        color: "#F5F5DC",
+        speed: 8,
+        emoji: "🥣",
+        desc: "Yoğurt atar, herkes sever",
+        special: "yogurt",
+        size: 0.9
+    },
+    mustafa: {
+        name: "Mustafa Dayı",
+        price: 150,
+        color: "#8B008B",
+        speed: 2,
+        emoji: "💨",
+        desc: "Osurursa evren yıkılır, şişko, bezli",
+        special: "osuruk",
+        size: 1.5
+    }
+};
+
+const JOBS = {
+    donerci: {
+        name: "Dönerci",
+        emoji: "🥙",
+        color: "#D2691E",
+        income: 1,
+        description: "Müşteri başına 1 altın",
+        products: [
+            { name: "Döner", price: 2, emoji: "🥙" },
+            { name: "Kola", price: 1, emoji: "🥤" }
+        ]
+    },
+    mcdonalds: {
+        name: "McDonald's",
+        emoji: "🍔",
+        color: "#FFD700",
+        income: 2,
+        description: "Müşteri başına 2 altın",
+        products: [
+            { name: "Hamburger", price: 5, emoji: "🍔" },
+            { name: "Kola", price: 1, emoji: "🥤" },
+            { name: "Patates", price: 2, emoji: "🍟" },
+            { name: "Grimace Shake", price: 3, emoji: "🥤" }
+        ]
+    },
+    dilencilik: {
+        name: "Dilencilik",
+        emoji: "🙏",
+        color: "#808080",
+        income: 0,
+        description: "Şansına göre 0-1 altın, hırsız riski var!",
+        products: []
+    }
+};
+
+const STORAGE_PREFIX = 'sehir_macerasi_profile_';
+const SAVE_DOCS = 'cityProfiles';
+
+// ==================== OYUN DURUMU ====================
+let canvas, ctx, minimap, minimapCtx;
+let gameState = 'menu';
+let player = null;
+let gold = 0;
+let unlockedChars = ['poyraz'];
+let currentChar = 'poyraz';
+let keys = {};
+let camera = { x: 0, y: 0 };
+let mapWidth = 2000;
+let mapHeight = 2000;
+let currentUsername = '';
+let profileLoaded = false;
+let saveTimer = null;
+let statusTimer = null;
+let lastTime = 0;
+let worldGenerated = false;
+
+let npcs = [];
+let buildings = [];
+let destructibles = [];
+let thieves = [];
+let police = [];
+let particles = [];
+let dialogues = [];
+
+let thiefSpawnTimer = 0;
+let policeTimer = 0;
+let workTimer = 0;
+let isWorking = false;
+let currentJob = null;
+let invisibleUntil = 0;
+let specialCooldowns = {
+    osuruk: 0,
+    gegirme: 0,
+    horlama: 0,
+    kas_kaldir: 0,
+    yumruk: 0,
+    yogurt: 0,
+    yere_duser: 0,
+    ucucu: 0,
+    kemer: 0
+};
+
+const genericDialogues = [
+    "Merhaba!", "Günaydın!", "Nasılsın?", "İyi günler!",
+    "Bugün hava güzel!", "İşler nasıl?", "Selam!", "Ne haber?"
+];
+
+// ==================== BAŞLANGIÇ ====================
+window.addEventListener('load', init);
+
+function init() {
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    minimap = document.getElementById('minimap');
+    minimapCtx = minimap.getContext('2d');
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    setupControls();
+    setupLogin();
+    generateWorld();
+    renderStaticFrame();
+    requestAnimationFrame(gameLoop);
+}
+
+function setupLogin() {
+    const input = document.getElementById('usernameInput');
+    const button = document.getElementById('btnLogin');
+
+    const submit = () => loginWithUsername(input.value);
+    button.addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submit();
+    });
+}
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    minimap.width = 120;
+    minimap.height = 120;
+}
+
+function sanitizeUsername(name) {
+    return String(name || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9ğüşöçıİ_]/gi, '')
+        .slice(0, 20);
+}
+
+function getLocalProfileKey(username) {
+    return STORAGE_PREFIX + username;
+}
+
+function defaultProfile(username) {
+    return {
+        username,
+        gold: 0,
+        unlockedChars: ['poyraz'],
+        currentChar: 'poyraz',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    };
+}
+
+async function loginWithUsername(rawName) {
+    const loginStatus = document.getElementById('loginStatus');
+    const username = sanitizeUsername(rawName);
+
+    if (!username || username.length < 3) {
+        loginStatus.textContent = 'En az 3 karakterlik bir kullanıcı adı yaz.';
+        return;
+    }
+
+    currentUsername = username;
+    loginStatus.textContent = 'Profil yükleniyor...';
+
+    let profile = null;
+
+    const localRaw = localStorage.getItem(getLocalProfileKey(username));
+    if (localRaw) {
+        try { profile = JSON.parse(localRaw); } catch {}
+    }
+
+    if (firebaseReady) {
+        try {
+            const ref = doc(db, SAVE_DOCS, username);
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+                profile = { ...(profile || defaultProfile(username)), ...snap.data() };
+            } else if (!profile) {
+                profile = defaultProfile(username);
+                await setDoc(ref, { ...profile, server: true, updatedAt: serverTimestamp() }, { merge: true });
+            }
+        } catch (err) {
+            console.warn('Firebase profil yüklenemedi, yerel kayıt kullanılacak.', err);
+        }
+    }
+
+    if (!profile) profile = defaultProfile(username);
+
+    gold = Number(profile.gold || 0);
+    unlockedChars = Array.isArray(profile.unlockedChars) && profile.unlockedChars.length ? profile.unlockedChars : ['poyraz'];
+    currentChar = unlockedChars.includes(profile.currentChar) ? profile.currentChar : unlockedChars[0];
+    profileLoaded = true;
+
+    document.getElementById('usernameInput').value = username;
+    document.getElementById('loginOverlay').style.display = 'none';
+    showMainMenu();
+
+    updateUI();
+    updateCharInfo();
+    saveProfile(true);
+    showMessage(`Hoş geldin, ${username}!`);
+}
+
+function renderStaticFrame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#1f3d11';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function setupControls() {
+    window.addEventListener('keydown', e => {
+        const k = e.key.toLowerCase();
+        keys[k] = true;
+        if (e.key === ' ' || e.key === 'ArrowUp') keys['up'] = true;
+        if (e.key === 'Control' || e.key === 'ArrowDown') keys['down'] = true;
+        if (k === 'e') doAction();
+        if (k === 'q') useSpecialAbility();
+        if (k === 'escape' && gameState === 'playing') showMainMenu();
+    });
+    window.addEventListener('keyup', e => {
+        const k = e.key.toLowerCase();
+        keys[k] = false;
+        if (e.key === ' ' || e.key === 'ArrowUp') keys['up'] = false;
+        if (e.key === 'Control' || e.key === 'ArrowDown') keys['down'] = false;
+    });
+
+    const setupTouch = (id, key) => {
+        const btn = document.getElementById(id);
+        const down = e => { e.preventDefault(); keys[key] = true; };
+        const up = e => { e.preventDefault(); keys[key] = false; };
+        btn.addEventListener('touchstart', down, { passive: false });
+        btn.addEventListener('touchend', up, { passive: false });
+        btn.addEventListener('touchcancel', up, { passive: false });
+        btn.addEventListener('mousedown', () => { keys[key] = true; });
+        btn.addEventListener('mouseup', () => { keys[key] = false; });
+        btn.addEventListener('mouseleave', () => { keys[key] = false; });
+    };
+
+    setupTouch('btnUp', 'up');
+    setupTouch('btnDown', 'down');
+    setupTouch('btnLeft', 'left');
+    setupTouch('btnRight', 'right');
+
+    document.getElementById('btnJump').addEventListener('click', () => {
+        if (player && !player.jumping && player.stunned <= 0) {
+            player.jumping = true;
+            player.jumpVel = -8;
+            showMessage("Zıpladın!");
+        }
+    });
+
+    document.getElementById('btnCrouch').addEventListener('click', () => {
+        if (player) {
+            player.crouching = !player.crouching;
+            showMessage(player.crouching ? "Eğildin! NPC'lerden daha kolay gizlenirsin." : "Ayağa kalktın!");
+        }
+    });
+
+    document.getElementById('btnAction').addEventListener('click', doAction);
+    const specialBtn = document.getElementById('btnSpecial');
+    if (specialBtn) specialBtn.addEventListener('click', useSpecialAbility);
+}
+
+function generateWorld() {
+    if (worldGenerated) return;
+    worldGenerated = true;
+
+    buildings = [
+        { x: 300, y: 300, w: 120, h: 100, type: 'donerci', name: 'Dönerci', emoji: '🥙' },
+        { x: 600, y: 200, w: 140, h: 120, type: 'mcdonalds', name: "McDonald's", emoji: '🍟' },
+        { x: 900, y: 500, w: 100, h: 80, type: 'dilencilik', name: 'Dilencilik Noktası', emoji: '🙏' },
+        { x: 200, y: 700, w: 100, h: 100, type: 'shop', name: 'Dükkan', emoji: '🛒' },
+        { x: 1200, y: 300, w: 150, h: 100, type: 'park', name: 'Park', emoji: '🌳' },
+        { x: 1500, y: 800, w: 130, h: 110, type: 'donerci', name: 'Dönerci 2', emoji: '🥙' },
+        { x: 400, y: 1100, w: 140, h: 120, type: 'mcdonalds', name: "McDonald's 2", emoji: '🍟' }
+    ];
+
+    destructibles = [
+        { x: 360, y: 420, w: 70, h: 28, hp: 2, maxHp: 2, type: 'duvar', name: 'Tahta Bariyer' },
+        { x: 760, y: 620, w: 90, h: 28, hp: 3, maxHp: 3, type: 'duvar', name: 'Kırılgan Duvar' },
+        { x: 1300, y: 980, w: 120, h: 30, hp: 4, maxHp: 4, type: 'duvar', name: 'Şehir Çiti' },
+        { x: 1650, y: 450, w: 80, h: 28, hp: 2, maxHp: 2, type: 'duvar', name: 'Eski Direk' }
+    ];
+
+    for (let i = 0; i < 30; i++) npcs.push(createNPC());
+    for (let i = 0; i < 5; i++) thieves.push(createThief());
+    for (let i = 0; i < 3; i++) police.push(createPolice());
+}
+
+function createNPC() {
+    return {
+        x: Math.random() * mapWidth,
+        y: Math.random() * mapHeight,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        name: ["Ahmet", "Mehmet", "Ayşe", "Fatma", "Ali", "Veli", "Zeynep", "Emre", "Can", "Berk"][Math.floor(Math.random() * 10)],
+        emoji: "🚶",
+        color: `hsl(${Math.random() * 360}, 50%, 50%)`,
+        dialogue: genericDialogues[Math.floor(Math.random() * genericDialogues.length)],
+        speech: '',
+        speechTime: 0,
+        speechCooldown: Math.random() * 3 + 1,
+        hasGold: Math.random() > 0.5,
+        stunned: 0
+    };
+}
+
+function createThief() {
+    return {
+        x: Math.random() * mapWidth,
+        y: Math.random() * mapHeight,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        emoji: "🦹",
+        stealing: false,
+        stealTimer: 0,
+        caught: false
+    };
+}
+
+function createPolice() {
+    return {
+        x: Math.random() * mapWidth,
+        y: Math.random() * mapHeight,
+        vx: 0,
+        vy: 0,
+        emoji: "👮",
+        chasing: false,
+        target: null
+    };
+}
+
+function gameLoop(timestamp) {
+    const dt = Math.min(0.033, (timestamp - lastTime) / 1000 || 0);
+    lastTime = timestamp;
+
+    if (gameState === 'playing') {
+        update(dt);
+        render();
+        renderMinimap();
+    } else {
+        renderStaticFrame();
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+function update(dt) {
+    if (!player) return;
+
+    Object.keys(specialCooldowns).forEach(k => {
+        specialCooldowns[k] = Math.max(0, specialCooldowns[k] - dt);
+    });
+
+    if (player.stunned > 0) player.stunned -= dt;
+
+    let dx = 0, dy = 0;
+    const speed = CHARACTERS[currentChar].speed * (player.crouching ? 0.5 : 1) * 20;
+
+    if (player.stunned <= 0) {
+        if (keys['left'] || keys['a']) dx = -1;
+        if (keys['right'] || keys['d']) dx = 1;
+        if (keys['up'] || keys['w']) dy = -1;
+        if (keys['down'] || keys['s']) dy = 1;
+    }
+
+    if (dx !== 0 && dy !== 0) {
+        dx *= 0.707;
+        dy *= 0.707;
+    }
+
+    player.x += dx * speed * dt;
+    player.y += dy * speed * dt;
+
+    if (player.jumping) {
+        player.jumpY += player.jumpVel;
+        player.jumpVel += 0.5;
+        if (player.jumpY >= 0) {
+            player.jumpY = 0;
+            player.jumping = false;
+        }
+    }
+
+    player.x = Math.max(20, Math.min(mapWidth - 20, player.x));
+    player.y = Math.max(20, Math.min(mapHeight - 20, player.y));
+
+    camera.x = Math.max(0, Math.min(mapWidth - canvas.width, player.x - canvas.width / 2));
+    camera.y = Math.max(0, Math.min(mapHeight - canvas.height, player.y - canvas.height / 2));
+
+    const nearestNpc = getNearestEntity(npcs, player.x, player.y, 90);
+
+    npcs.forEach(npc => {
+        if (npc.stunned > 0) {
+            npc.stunned -= dt;
+            return;
+        }
+
+        npc.x += npc.vx * 30 * dt;
+        npc.y += npc.vy * 30 * dt;
+
+        if (npc.x < 0 || npc.x > mapWidth) npc.vx *= -1;
+        if (npc.y < 0 || npc.y > mapHeight) npc.vy *= -1;
+
+        const dist = Math.hypot(player.x - npc.x, player.y - npc.y);
+        const isInvisible = currentChar === 'asya' && Date.now() < invisibleUntil;
+
+        if (!isInvisible && dist < 60 && npc === nearestNpc && npc.speechCooldown <= 0 && Math.random() < 0.5) {
+            npc.speech = pickNpcDialogue(npc);
+            npc.speechTime = 2.2;
+            npc.speechCooldown = 4 + Math.random() * 3;
+        }
+
+        if (npc.speechCooldown > 0) npc.speechCooldown -= dt;
+        if (npc.speechTime > 0) npc.speechTime -= dt;
+
+        if (!isInvisible && dist < 60 && player.crouching && npc.hasGold && Math.random() < 0.01) {
+            addGold(1);
+            npc.hasGold = false;
+            showMessage("1 altın çaldın!");
+            spawnPolice();
+        }
+    });
+
+    thieves.forEach(thief => {
+        thief.x += thief.vx * 40 * dt;
+        thief.y += thief.vy * 40 * dt;
+
+        if (thief.x < 0 || thief.x > mapWidth) thief.vx *= -1;
+        if (thief.y < 0 || thief.y > mapHeight) thief.vy *= -1;
+
+        const dist = Math.hypot(player.x - thief.x, player.y - thief.y);
+
+        if (dist < 50 && !thief.caught) {
+            if (Math.random() < 0.008 && gold >= 5) {
+                spendGold(5);
+                showMessage("🦹 Hırsız 5 altın çaldı!");
+                thief.stealing = true;
+                thief.stealTimer = 2;
+            }
+        }
+
+        if (thief.stealing) thief.stealTimer -= dt;
+        if (thief.stealing && thief.stealTimer <= 0) thief.stealing = false;
+
+        if (dist < 40 && keys['e'] && thief.stealing) {
+            const playerSpeed = CHARACTERS[currentChar].speed;
+            if (playerSpeed > 10) {
+                addGold(5);
+                thief.caught = true;
+                thief.x = Math.random() * mapWidth;
+                thief.y = Math.random() * mapHeight;
+                thief.caught = false;
+                thief.stealing = false;
+                showMessage("Hırsızı yakaladın! 5 altın geri aldın!");
+            }
+        }
+    });
+
+    police.forEach(cop => {
+        if (cop.chasing && cop.target) {
+            const dx = cop.target.x - cop.x;
+            const dy = cop.target.y - cop.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 5) {
+                cop.x += (dx / dist) * 60 * dt;
+                cop.y += (dy / dist) * 60 * dt;
+            }
+
+            if (dist < 40) {
+                const penalty = Math.min(gold, 10);
+                spendGold(penalty);
+                showMessage(`👮 Polis seni yakaladı! ${penalty} altın ceza!`);
+                cop.chasing = false;
+                cop.target = null;
+                cop.x = Math.random() * mapWidth;
+                cop.y = Math.random() * mapHeight;
+            }
+        } else {
+            cop.x += cop.vx * 20 * dt;
+            cop.y += cop.vy * 20 * dt;
+            if (Math.random() < 0.02) {
+                cop.vx = (Math.random() - 0.5) * 2;
+                cop.vy = (Math.random() - 0.5) * 2;
+            }
+        }
+
+        if (cop.x < 0 || cop.x > mapWidth) cop.vx *= -1;
+        if (cop.y < 0 || cop.y > mapHeight) cop.vy *= -1;
+    });
+
+    updateSpecialAbilities(dt);
+
+    particles = particles.filter(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        return p.life > 0;
+    });
+
+    updateUI();
+}
+
+function pickNpcDialogue(npc) {
+    const charSpec = CHARACTERS[currentChar];
+    const specialLines = {
+        poyraz: ["Poyraz yine yere düştü!", "Kaka kafalı geliyor!", "Ağlama sesi duyuluyor."],
+        asya: ["Boyun küçük ama sesin büyük.", "Taşı seçtim, rahat ol.", "Seni göremedim bile!"],
+        tuna: ["Kemer nerde?", "Evli misin gerçekten?", "Asya seni çağırıyor!"],
+        aydin: ["Tek kaşlı geliyor!", "Aman uzak dur!", "Yumruk mu geliyor?"],
+        therock: ["Kaş kalktı!", "Rock geldi!", "Kaslar konuşuyor."],
+        irfan: ["Horlama başladı...", "Uykulu enerji!", "Enişte dinleniyor."],
+        kelodayi: ["Deprem olabilir!", "Geğirme sesi yakında.", "Koş koş!"],
+        yogurtnine: ["Yoğurt hazır!", "Nine kurtarıcı!", "Sütlü bir şeyler var."],
+        mustafa: ["Evren gergin.", "Dayı gazlı modda.", "Kaç biraz!"]
+    };
+
+    const arr = (charSpec && specialLines[currentChar]) ? specialLines[currentChar] : [npc.dialogue, ...genericDialogues];
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getNearestEntity(list, x, y, maxDist) {
+    let best = null;
+    let bestDist = maxDist;
+    for (const item of list) {
+        const d = Math.hypot(item.x - x, item.y - y);
+        if (d < bestDist) {
+            bestDist = d;
+            best = item;
+        }
+    }
+    return best;
+}
+
+function damageDestructibles(centerX, centerY, radius, damage, sourceLabel) {
+    let hitCount = 0;
+    destructibles.forEach(obj => {
+        const ox = obj.x + obj.w / 2;
+        const oy = obj.y + obj.h / 2;
+        const dist = Math.hypot(centerX - ox, centerY - oy);
+        if (dist <= radius) {
+            obj.hp -= damage;
+            hitCount++;
+            if (obj.hp <= 0) {
+                obj.broken = true;
+                obj.brokenAt = Date.now();
+            }
+        }
+    });
+    destructibles = destructibles.filter(obj => !obj.broken);
+    if (hitCount > 0) {
+        showMessage(`${sourceLabel} bazı yerleri yıktı!`);
+    }
+}
+
+function applyAoeKnockback(centerX, centerY, radius, power, stunTime = 0) {
+    npcs.forEach(npc => {
+        const dist = Math.hypot(centerX - npc.x, centerY - npc.y);
+        if (dist < radius) {
+            const safe = Math.max(1, dist);
+            npc.vx = (npc.x - centerX) / safe * power;
+            npc.vy = (npc.y - centerY) / safe * power;
+            if (stunTime > 0) npc.stunned = Math.max(npc.stunned, stunTime);
+        }
+    });
+}
+
+function frightenNearby(radius, text) {
+    const npc = getNearestEntity(npcs, player.x, player.y, radius);
+    if (npc) {
+        npc.speech = text;
+        npc.speechTime = 2.5;
+        npc.speechCooldown = 4;
+    }
+}
+
+function updateSpecialAbilities(dt) {
+    const char = CHARACTERS[currentChar];
+
+    // Hafif atmosferik tetiklemeler, ama asıl güç kullanıcı kontrollü özel butonla kullanılır.
+    if (char.special === 'horlama' && specialCooldowns.horlama <= 0 && Math.random() < 0.0003) {
+        specialCooldowns.horlama = 10;
+        showMessage("😴 İrfan içgüdüsel horladı.");
+        applyAoeKnockback(player.x, player.y, 180, 4, 1.2);
+    }
+
+    if (char.special === 'yere_duser' && specialCooldowns.yere_duser <= 0 && Math.random() < 0.00025) {
+        specialCooldowns.yere_duser = 10;
+        showMessage("😭 Poyraz yine yere kapandı.");
+        player.stunned = 1.2;
+    }
+}
+
+function useSpecialAbility() {
+    if (gameState !== 'playing' || !player || player.stunned > 0) return;
+    const char = CHARACTERS[currentChar];
+
+    if (char.special === 'yere_duser') {
+        if (specialCooldowns.yere_duser > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.yere_duser = 6;
+        player.stunned = 1.4;
+        showMessage('😭 Poyraz düştü ve bir şey yapamadı!');
+        return;
+    }
+
+    if (char.special === 'ucucu') {
+        if (specialCooldowns.ucucu > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.ucucu = 8;
+        invisibleUntil = Date.now() + 5000;
+        showMessage("🪨 Asya görünmez oldu! NPC'ler onu duyar ama göremez.");
+        return;
+    }
+
+    if (char.special === 'kemer') {
+        if (specialCooldowns.kemer > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.kemer = 6;
+        showMessage('💪 Tuna kemer savurdu!');
+        applyAoeKnockback(player.x, player.y, 120, 10, 1.2);
+        return;
+    }
+
+    if (char.special === 'yumruk') {
+        if (specialCooldowns.yumruk > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.yumruk = 4;
+        showMessage('🥊 Aydın yumruk attı!');
+        applyAoeKnockback(player.x, player.y, 130, 16, 1.7);
+        return;
+    }
+
+    if (char.special === 'kas_kaldir') {
+        if (specialCooldowns.kas_kaldir > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.kas_kaldir = 7;
+        showMessage('🪨 The Rock kaşını kaldırdı!');
+        applyAoeKnockback(player.x, player.y, 160, 6, 2);
+        return;
+    }
+
+    if (char.special === 'horlama') {
+        if (specialCooldowns.horlama > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.horlama = 7;
+        showMessage('😴 İrfan enişte horladı! Dünya titredi!');
+        applyAoeKnockback(player.x, player.y, 220, 5, 2.5);
+        return;
+    }
+
+    if (char.special === 'gegirme') {
+        if (specialCooldowns.gegirme > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.gegirme = 8;
+        showMessage('🌪️ Kelo Dayı geğirdi! 10.0 deprem!');
+        applyAoeKnockback(player.x, player.y, 230, 7, 3);
+        damageDestructibles(player.x, player.y, 230, 2, 'Kelo Dayı');
+        return;
+    }
+
+    if (char.special === 'yogurt') {
+        if (specialCooldowns.yogurt > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.yogurt = 6;
+        showMessage('🥣 Yoğurt Nine yoğurt fırlattı!');
+        npcs.forEach(npc => {
+            const dist = Math.hypot(player.x - npc.x, player.y - npc.y);
+            if (dist < 120) {
+                npc.speech = 'yapacağın yoğurtu yiyim';
+                npc.speechTime = 2;
+                npc.speechCooldown = 4;
+                npc.stunned = 1.5;
+                const safe = Math.max(1, dist);
+                npc.vx = (npc.x - player.x) / safe * 7;
+                npc.vy = (npc.y - player.y) / safe * 7;
+            }
+        });
+        return;
+    }
+
+    if (char.special === 'osuruk') {
+        if (specialCooldowns.osuruk > 0) return showMessage('Özel yetenek beklemede.');
+        specialCooldowns.osuruk = 10;
+        showMessage('💨 Mustafa Dayı osurdu! 20.2 deprem!');
+        applyAoeKnockback(player.x, player.y, 260, 9, 3);
+        damageDestructibles(player.x, player.y, 260, 3, 'Mustafa Dayı');
+        return;
+    }
+}
+
+function spawnPolice() {
+    police.push({
+        x: player.x + 200,
+        y: player.y + 200,
+        vx: 0,
+        vy: 0,
+        emoji: "👮",
+        chasing: true,
+        target: player
+    });
+}
+
+// ==================== ÇİZİM ====================
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(-camera.x, -camera.y);
+
+    ctx.fillStyle = '#3a6b1f';
+    ctx.fillRect(0, 0, mapWidth, mapHeight);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < mapWidth; x += 100) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, mapHeight);
+        ctx.stroke();
+    }
+    for (let y = 0; y < mapHeight; y += 100) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(mapWidth, y);
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = '#666';
+    ctx.fillRect(0, 400, mapWidth, 80);
+    ctx.fillRect(500, 0, 80, mapHeight);
+    ctx.fillRect(0, 900, mapWidth, 80);
+    ctx.fillRect(1100, 0, 80, mapHeight);
+
+    buildings.forEach(b => {
+        ctx.fillStyle = b.type === 'donerci' ? '#D2691E' :
+            b.type === 'mcdonalds' ? '#FFD700' :
+            b.type === 'shop' ? '#8B4513' :
+            b.type === 'park' ? '#228B22' : '#808080';
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(b.emoji, b.x + b.w / 2, b.y + b.h / 2 + 10);
+
+        ctx.font = 'bold 12px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText(b.name, b.x + b.w / 2, b.y - 5);
+    });
+
+    destructibles.forEach(obj => {
+        const ratio = obj.hp / obj.maxHp;
+        ctx.fillStyle = ratio > 0.66 ? '#a56a3f' : ratio > 0.33 ? '#7a4a28' : '#4d2b16';
+        ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        ctx.strokeStyle = '#2c1a0f';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+        ctx.font = '11px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText(obj.name, obj.x + obj.w / 2, obj.y - 4);
+    });
+
+    npcs.forEach(npc => {
+        ctx.globalAlpha = npc.stunned > 0 ? 0.5 : 1;
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = npc.color || 'white';
+        ctx.fillText(npc.emoji, npc.x, npc.y);
+
+        ctx.font = '10px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText(npc.name, npc.x, npc.y - 20);
+
+        if (npc.speechTime > 0 && npc.speech) {
+            const text = npc.speech;
+            ctx.font = '11px Arial';
+            const width = Math.min(180, ctx.measureText(text).width + 16);
+            const boxX = npc.x - width / 2;
+            const boxY = npc.y - 64;
+            ctx.fillStyle = 'rgba(0,0,0,0.82)';
+            roundRect(ctx, boxX, boxY, width, 22, 8, true, false);
+            ctx.fillStyle = 'white';
+            ctx.fillText(text, npc.x, npc.y - 48);
+        }
+        ctx.globalAlpha = 1;
+    });
+
+    thieves.forEach(thief => {
+        ctx.font = '28px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'white';
+        ctx.fillText(thief.emoji, thief.x, thief.y);
+        if (thief.stealing) {
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'red';
+            ctx.fillText("ÇALDI!", thief.x, thief.y - 25);
+        }
+    });
+
+    police.forEach(p => {
+        ctx.font = '28px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'white';
+        ctx.fillText(p.emoji, p.x, p.y);
+        if (p.chasing) {
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'red';
+            ctx.fillText("YAKALIYOR!", p.x, p.y - 25);
+        }
+    });
+
+    if (player) {
+        const char = CHARACTERS[currentChar];
+        const size = char.size || 1;
+        ctx.save();
+        ctx.translate(player.x, player.y + (player.jumpY || 0));
+
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(0, 15, 15 * size, 5 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = `${30 * size}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.globalAlpha = (currentChar === 'asya' && Date.now() < invisibleUntil) ? 0.35 : 1;
+        ctx.fillStyle = char.color || 'white';
+        ctx.fillText(char.emoji, 0, 10);
+
+        ctx.font = 'bold 12px Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(char.name, 0, -25);
+        ctx.globalAlpha = 1;
+
+        if (player.crouching) {
+            ctx.font = '10px Arial';
+            ctx.fillStyle = 'yellow';
+            ctx.fillText("EĞİLİYOR", 0, -40);
+        }
+
+        if (player.stunned > 0) {
+            ctx.font = '10px Arial';
+            ctx.fillStyle = '#ff8080';
+            ctx.fillText("SERSEMLEDİ", 0, -52);
+        }
+
+        ctx.restore();
+    }
+
+    particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+
+    ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+    if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
+    ctx.beginPath();
+    ctx.moveTo(x + r.tl, y);
+    ctx.lineTo(x + w - r.tr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+    ctx.lineTo(x + w, y + h - r.br);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+    ctx.lineTo(x + r.bl, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+    ctx.lineTo(x, y + r.tl);
+    ctx.quadraticCurveTo(x, y, x + r.tl, y);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+}
+
+function renderMinimap() {
+    minimapCtx.clearRect(0, 0, 120, 120);
+    minimapCtx.fillStyle = 'rgba(0,0,0,0.5)';
+    minimapCtx.fillRect(0, 0, 120, 120);
+
+    const scaleX = 120 / mapWidth;
+    const scaleY = 120 / mapHeight;
+
+    buildings.forEach(b => {
+        minimapCtx.fillStyle = '#666';
+        minimapCtx.fillRect(b.x * scaleX, b.y * scaleY, Math.max(2, b.w * scaleX), Math.max(2, b.h * scaleY));
+    });
+
+    destructibles.forEach(o => {
+        minimapCtx.fillStyle = '#b07a4f';
+        minimapCtx.fillRect(o.x * scaleX, o.y * scaleY, Math.max(2, o.w * scaleX), Math.max(2, o.h * scaleY));
+    });
+
+    if (player) {
+        minimapCtx.fillStyle = '#ffd700';
+        minimapCtx.fillRect(player.x * scaleX - 2, player.y * scaleY - 2, 4, 4);
+    }
+
+    minimapCtx.fillStyle = 'blue';
+    npcs.forEach(npc => minimapCtx.fillRect(npc.x * scaleX, npc.y * scaleY, 2, 2));
+
+    minimapCtx.fillStyle = 'red';
+    thieves.forEach(t => minimapCtx.fillRect(t.x * scaleX, t.y * scaleY, 2, 2));
+}
+
+// ==================== ETKİLEŞİM ====================
+function doAction() {
+    if (gameState !== 'playing' || !player) return;
+
+    const nearestBuilding = getNearestEntity(buildings.map(b => ({
+        ...b,
+        x: b.x + b.w / 2,
+        y: b.y + b.h / 2,
+        _raw: b
+    })), player.x, player.y, 100);
+
+    if (nearestBuilding) {
+        const b = nearestBuilding._raw;
+        if (b.type === 'shop') {
+            showShop();
+            return;
+        }
+        if (JOBS[b.type]) {
+            startJob(b.type);
+            return;
+        }
+    }
+
+    const npc = getNearestEntity(npcs, player.x, player.y, 70);
+    if (npc) {
+        npc.speech = pickNpcDialogue(npc);
+        npc.speechTime = 2.4;
+        npc.speechCooldown = 4;
+        if (currentChar === 'asya') {
+            showMessage("NPC: Anneni mi daha çok seviyorsun taşı mı? Asya: Tabii ki taş! 🪨");
+        } else {
+            showMessage(`${npc.name}: ${npc.dialogue}`);
+        }
+    }
+}
+
+function startJob(jobType) {
+    const job = JOBS[jobType];
+    if (!job) return;
+
+    currentJob = jobType;
+    gameState = 'job';
+
+    const menu = document.getElementById('jobMenu');
+    const title = document.getElementById('jobTitle');
+    const content = document.getElementById('jobContent');
+
+    menu.style.display = 'flex';
+    title.textContent = `${job.emoji} ${job.name}`;
+
+    let html = `<div style="color:white; text-align:center; margin:20px;">`;
+    html += `<p>${job.description}</p>`;
+
+    if (job.products.length > 0) {
+        html += `<h3 style="margin-top:12px;">Ürünler</h3>`;
+        job.products.forEach(p => {
+            html += `<p>${p.emoji} ${p.name}: ${p.price} altın</p>`;
+        });
+    }
+
+    html += `<br>`;
+    html += `<button class="menu-btn" onclick="doWork('${jobType}')">💼 Çalışmaya Başla</button>`;
+    html += `</div>`;
+
+    content.innerHTML = html;
+}
+
+function doWork(jobType) {
+    const job = JOBS[jobType];
+    if (!job) return;
+
+    if (jobType === 'dilencilik') {
+        const rand = Math.random();
+        if (rand < 0.3) {
+            addGold(1);
+            showMessage("🙏 Birisi sana 1 altın verdi!");
+        } else if (rand < 0.5) {
+            showMessage("🤢 NPC: İyy bu nasıl insan! (Gitti)");
+        } else if (rand < 0.7 && gold >= 5) {
+            spendGold(5);
+            showMessage("🦹 Hırsız gelip 5 altınını çaldı!");
+        } else {
+            showMessage("Kimse sana para vermedi...");
+        }
+    } else {
+        const earnings = job.income + Math.floor(Math.random() * 2);
+        addGold(earnings);
+        showMessage(`💰 ${job.name}'de çalıştın! ${earnings} altın kazandın!`);
+    }
+
+    updateUI();
+    saveProfile();
+}
+
+function closeJobMenu() {
+    document.getElementById('jobMenu').style.display = 'none';
+    gameState = 'playing';
+}
+
+// ==================== MENÜLER ====================
+function showMainMenu() {
+    gameState = 'menu';
+    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
+    document.getElementById('mainMenu').style.display = 'flex';
+}
+
+function showCharSelect() {
+    if (!profileLoaded) return;
+    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
+    document.getElementById('charSelect').style.display = 'flex';
+
+    const grid = document.getElementById('charGrid');
+    grid.innerHTML = '';
+
+    const abilityName = {
+        yere_duser: 'Düşüş', ucucu: 'Minik Kaçış', kemer: 'Kemer Saldırısı', yumruk: 'Yumruk', kas_kaldir: 'Felç Bakışı', horlama: 'Horlama', gegirme: 'Geğirme', yogurt: 'Yoğurt Atışı', osuruk: 'Osuruk Saldırısı'
+    };
+
+    const order = ['poyraz', 'asya', 'tuna', 'aydin', 'therock', 'irfan', 'kelodayi', 'yogurtnine', 'mustafa'];
+
+    order.forEach(key => {
+        const char = CHARACTERS[key];
+        const isUnlocked = unlockedChars.includes(key);
+        const card = document.createElement('div');
+        card.className = 'char-card';
+        const specialLabel = abilityName[char.special] || char.special;
+        card.innerHTML = `
+            <div style="font-size:44px; line-height:1;">${char.emoji}</div>
+            <div class="char-name">${char.name}</div>
+            <div class="char-price">${isUnlocked ? '✅ Sahipsin' : char.price + ' altın'}</div>
+            <div class="char-desc">${char.desc}</div>
+            <div style="color:#8cff8c; font-size:11px; margin-top:5px;">Yetenek: ${specialLabel}</div>
+            <div style="color:#aaa; font-size:11px; margin-top:4px;">Hız: ${char.speed} km/s</div>
+        `;
+
+        if (isUnlocked) {
+            card.onclick = () => selectCharacter(key);
+            card.style.borderColor = '#ffd700';
+        } else {
+            card.style.opacity = '0.65';
+            card.onclick = () => {
+                if (spendGold(char.price)) {
+                    unlockedChars.push(key);
+                    showMessage(`${char.name} satın alındı!`);
+                    scheduleSave();
+                    showCharSelect();
+                } else {
+                    showMessage("Yeterli altının yok!");
+                }
+            };
+        }
+
+        grid.appendChild(card);
+    });
+}
+
+function selectCharacter(charKey) {
+    currentChar = charKey;
+    const char = CHARACTERS[charKey];
+
+    player = {
+        x: mapWidth / 2,
+        y: mapHeight / 2,
+        jumping: false,
+        jumpY: 0,
+        jumpVel: 0,
+        crouching: false,
+        stunned: 0
+    };
+
+    document.getElementById('charSelect').style.display = 'none';
+    gameState = 'playing';
+
+    updateCharInfo();
+    showMessage(`${char.name} seçildi! Şehre hoş geldin!`);
+    saveProfile();
+}
+
+
+function showShop() {
+    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
+    document.getElementById('shopMenu').style.display = 'flex';
+
+    const grid = document.getElementById('shopGrid');
+    grid.innerHTML = '';
+
+    Object.entries(CHARACTERS).forEach(([key, char]) => {
+        if (unlockedChars.includes(key)) return;
+
+        const item = document.createElement('div');
+        item.className = 'shop-item';
+        item.innerHTML = `
+            <div style="font-size:50px;">${char.emoji}</div>
+            <h3>${char.name}</h3>
+            <p>${char.desc}</p>
+            <p style="color:#ffd700; font-size:18px;">${char.price} altın</p>
+        `;
+
+        item.onclick = () => {
+            if (spendGold(char.price)) {
+                unlockedChars.push(key);
+                showMessage(`${char.name} satın alındı!`);
+                scheduleSave();
+                showShop();
+            } else {
+                showMessage("Yeterli altının yok!");
+            }
+        };
+
+        grid.appendChild(item);
+    });
+
+    if (grid.innerHTML === '') {
+        grid.innerHTML = '<div style="color:white; text-align:center;">Tüm karakterleri satın aldın!</div>';
+    }
+}
+
+function showHowToPlay() {
+    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
+    document.getElementById('howToPlay').style.display = 'flex';
+}
+
+// ==================== KAYIT / UI ====================
+function addGold(amount) {
+    gold = Math.max(0, Math.floor(gold + amount));
+    updateUI();
+    scheduleSave();
+}
+
+function spendGold(amount) {
+    if (gold < amount) return false;
+    gold = Math.max(0, Math.floor(gold - amount));
+    updateUI();
+    scheduleSave();
+    return true;
+}
+
+function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveProfile(false), 1200);
+    setSaveStatus('Kaydedilecek...');
+}
+
+async function saveProfile(force = false) {
+    if (!profileLoaded || !currentUsername) return;
+
+    const profile = {
+        username: currentUsername,
+        gold,
+        unlockedChars,
+        currentChar,
+        updatedAt: Date.now()
+    };
+
+    localStorage.setItem(getLocalProfileKey(currentUsername), JSON.stringify(profile));
+
+    if (firebaseReady) {
+        try {
+            const ref = doc(db, SAVE_DOCS, currentUsername);
+            await setDoc(ref, { ...profile, updatedAt: serverTimestamp() }, { merge: true });
+            if (force) setSaveStatus('Kaydedildi');
+            else setSaveStatus('Firebase + yerel kayıt güncellendi');
+            return;
+        } catch (err) {
+            console.warn('Firebase kaydı başarısız, yerel kayıt kullanıldı.', err);
+        }
+    }
+
+    if (force) setSaveStatus('Yerel kaydedildi');
+    else setSaveStatus('Yerel kayıt güncellendi');
+}
+
+function setSaveStatus(text) {
+    const el = document.getElementById('saveStatus');
+    el.textContent = text;
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => {
+        el.textContent = currentUsername ? `● ${currentUsername}` : '● Giriş bekleniyor';
+    }, 1800);
+}
+
+function updateUI() {
+    document.getElementById('goldDisplay').textContent = `💰 Altın: ${gold}`;
+}
+
+function updateCharInfo() {
+    const char = CHARACTERS[currentChar];
+    const abilityName = { yere_duser: 'Düşüş', ucucu: 'Görünmezlik', kemer: 'Kemer Saldırısı', yumruk: 'Yumruk', kas_kaldir: 'Felç Bakışı', horlama: 'Horlama', gegirme: 'Geğirme', yogurt: 'Yoğurt', osuruk: 'Osuruk' };
+    document.getElementById('charInfo').innerHTML = `
+        <b>${char.emoji} ${char.name}</b><br>
+        Kullanıcı: ${currentUsername || '-'}<br>
+        Hız: ${char.speed} km<br>
+        Yetenek: ${abilityName[char.special] || char.special}
+    `;
+}
+
+
+// ==================== MESAJ ====================
+function showMessage(text) {
+    const box = document.getElementById('messageBox');
+    box.textContent = text;
+    box.style.display = 'block';
+    clearTimeout(box._timer);
+    box._timer = setTimeout(() => {
+        box.style.display = 'none';
+    }, 2500);
+}
+
+// ==================== DIŞA AÇMA ====================
+window.showMainMenu = showMainMenu;
+window.showCharSelect = showCharSelect;
+window.showShop = showShop;
+window.showHowToPlay = showHowToPlay;
+window.closeJobMenu = closeJobMenu;
+window.doWork = doWork;
+window.doAction = doAction;
+window.useSpecialAbility = useSpecialAbility;
+
+window.addEventListener('beforeunload', () => {
+    if (currentUsername) {
+        const profile = {
+            username: currentUsername,
+            gold,
+            unlockedChars,
+            currentChar,
+            updatedAt: Date.now()
+        };
+        localStorage.setItem(getLocalProfileKey(currentUsername), JSON.stringify(profile));
+    }
+});
+</script>
+</body>
+</html>
