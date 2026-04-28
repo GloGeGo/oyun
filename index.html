@@ -1,1746 +1,876 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Şehir Macerası - Karakter Oyunu</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
-        body { 
-            background: #1a1a2e; 
-            overflow: hidden; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            width: 100vw; 
-            height: 100vh;
-        }
-        #gameContainer { 
-            position: relative; 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-        }
-        canvas { 
-            display: block; 
-            background: #2d5016; 
-        }
-
-        /* UI Overlay */
-        #ui {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-        }
-
-        /* Altın Gösterge */
-        #goldDisplay {
-            position: absolute;
-            top: 10px; left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #ffd700;
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            pointer-events: auto;
-            border: 2px solid #ffd700;
-        }
-
-        /* Karakter Bilgisi */
-        #charInfo {
-            position: absolute;
-            top: 10px; right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 14px;
-            max-width: 200px;
-            pointer-events: auto;
-            border: 2px solid #444;
-        }
-
-        /* Mesaj Kutusu */
-        #messageBox {
-            position: absolute;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 15px;
-            font-size: 14px;
-            max-width: 80%;
-            text-align: center;
-            display: none;
-            pointer-events: auto;
-            border: 2px solid #666;
-            z-index: 100;
-        }
-
-        /* Kontroller */
-        #controls {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            pointer-events: auto;
-        }
-
-        .d-pad {
-            width: 120px; height: 120px;
-            position: relative;
-        }
-
-        .d-btn {
-            position: absolute;
-            width: 40px; height: 40px;
-            background: rgba(255,255,255,0.3);
-            border: 2px solid rgba(255,255,255,0.5);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: white;
-            cursor: pointer;
-        }
-        .d-btn:active { background: rgba(255,255,255,0.5); }
-        .d-up { top: 0; left: 40px; }
-        .d-down { bottom: 0; left: 40px; }
-        .d-left { top: 40px; left: 0; }
-        .d-right { top: 40px; right: 0; }
-
-        #actionButtons {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            pointer-events: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .action-btn {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.5);
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-        .action-btn:active { transform: scale(0.95); }
-        #btnJump { background: rgba(255,100,100,0.6); }
-        #btnCrouch { background: rgba(100,100,255,0.6); }
-        #btnAction { background: rgba(100,255,100,0.6); width: 70px; height: 70px; }
-        #btnSpecial { background: rgba(255,215,0,0.7); width: 70px; height: 70px; }
-        .menu-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-        .mini-btn { background:#5c5c95; color:white; border:2px solid #7f7fb8; padding:10px 16px; border-radius:10px; cursor:pointer; font-size:14px; }
-        .mini-btn:active { transform: scale(0.98); }
-        .char-header { color:white; text-align:center; max-width: 680px; margin-bottom: 12px; line-height:1.45; }
-        .char-grid { padding: 0 10px 10px; }
-
-        /* Menüler */
-        .menu-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            z-index: 1000;
-        }
-
-        .menu-title {
-            color: #ffd700;
-            font-size: 32px;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-
-        .menu-btn {
-            background: #4a4a8a;
-            color: white;
-            border: 2px solid #6a6aaa;
-            padding: 12px 30px;
-            margin: 8px;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            min-width: 200px;
-            text-align: center;
-        }
-        .menu-btn:hover { background: #5a5a9a; }
-        .menu-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .char-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            max-width: 90%;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
-        .char-card {
-            background: #2a2a4a;
-            border: 2px solid #4a4a8a;
-            border-radius: 10px;
-            padding: 10px;
-            text-align: center;
-            color: white;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .char-card:hover { transform: scale(1.05); border-color: #ffd700; }
-        .char-card .char-name { font-weight: bold; color: #ffd700; margin-bottom: 5px; }
-        .char-card .char-price { color: #aaa; font-size: 12px; }
-        .char-card .char-desc { color: #ccc; font-size: 11px; margin-top: 5px; }
-
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            max-width: 90%;
-        }
-
-        .shop-item {
-            background: #2a2a4a;
-            border: 2px solid #4a4a8a;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            color: white;
-            cursor: pointer;
-        }
-        .shop-item:hover { border-color: #ffd700; }
-
-        #jobMenu, #shopMenu, #charSelect, #mainMenu { display: none; }
-
-        .npc-dialogue {
-            position: absolute;
-            background: rgba(255,255,255,0.95);
-            color: black;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 12px;
-            max-width: 150px;
-            text-align: center;
-            pointer-events: none;
-            border: 2px solid #333;
-            z-index: 50;
-        }
-        .npc-dialogue::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid rgba(255,255,255,0.95);
-        }
-
-        .back-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        #minimap {
-            position: absolute;
-            top: 60px;
-            left: 10px;
-            width: 120px;
-            height: 120px;
-            background: rgba(0,0,0,0.6);
-            border: 2px solid #444;
-            border-radius: 8px;
-            pointer-events: none;
-        }
-
-        #saveStatus {
-            position: absolute;
-            top: 52px;
-            right: 10px;
-            background: rgba(0,0,0,0.65);
-            color: #8cff8c;
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        #loginOverlay input {
-            width: min(320px, 80vw);
-            padding: 12px 14px;
-            margin: 10px 0;
-            border-radius: 10px;
-            border: 2px solid #6a6aaa;
-            background: rgba(255,255,255,0.96);
-            color: #111;
-            font-size: 16px;
-            outline: none;
-        }
-
-        #loginOverlay .small-note {
-            color: #d6d6ff;
-            font-size: 12px;
-            max-width: 420px;
-            line-height: 1.5;
-            text-align: center;
-            margin-top: 8px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Yunus Obby</title>
+  <style>
+    :root {
+      --ui-bg: rgba(0,0,0,0.42);
+      --ui-border: rgba(255,255,255,0.18);
+      --text: #fff;
+      --accent: #7cff8a;
+      --danger: #ff6b6b;
+      --warning: #ffd166;
+    }
+    html, body {
+      width: 100%; height: 100%; margin: 0; overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(#8fd3ff 0%, #b9e6ff 55%, #d9f4ff 100%);
+      touch-action: none;
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+    #ui {
+      position: absolute; top: 14px; left: 14px; z-index: 10;
+      color: var(--text); background: var(--ui-bg); border: 1px solid var(--ui-border);
+      border-radius: 14px; padding: 12px 14px; min-width: 220px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.22); backdrop-filter: blur(8px);
+      user-select: none;
+    }
+    #ui .row { display: flex; justify-content: space-between; gap: 16px; margin: 4px 0; font-size: 14px; }
+    #ui .title { font-weight: 800; font-size: 16px; margin-bottom: 8px; letter-spacing: 0.2px; }
+    #ui .small { opacity: 0.9; font-size: 12px; line-height: 1.35; margin-top: 8px; }
+    #barWrap {
+      height: 10px; border-radius: 999px; overflow: hidden; margin-top: 10px;
+      background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.15);
+    }
+    #bar { height: 100%; width: 0%; background: linear-gradient(90deg, #72ffb0, #7cf7ff); }
+    #centerMsg {
+      position: absolute; inset: 0; display: grid; place-items: center; z-index: 20;
+      pointer-events: none;
+    }
+    #centerMsg .card {
+      opacity: 0; transform: translateY(8px) scale(0.98);
+      transition: 220ms ease;
+      background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.16);
+      padding: 18px 20px; border-radius: 18px; text-align: center; min-width: 280px;
+      box-shadow: 0 16px 50px rgba(0,0,0,0.25); backdrop-filter: blur(8px);
+    }
+    #centerMsg.show .card { opacity: 1; transform: translateY(0) scale(1); }
+    #centerMsg .big { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+    #centerMsg .hint { font-size: 13px; opacity: 0.92; }
+    #btnRestart {
+      margin-top: 10px; border: none; border-radius: 12px; padding: 10px 14px;
+      background: #ffffff; color: #111; font-weight: 800; cursor: pointer;
+      pointer-events: auto; display: none;
+    }
+    #btnRestart:hover { transform: translateY(-1px); }
+    #mobileControls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 12px;
+      pointer-events: none;
+      z-index: 15;
+    }
+    .padGroup {
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+    }
+    .touchBtn {
+      width: 72px;
+      height: 72px;
+      border: none;
+      border-radius: 22px;
+      background: rgba(0,0,0,0.42);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+      backdrop-filter: blur(8px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .touchBtn:active { transform: scale(0.96); background: rgba(0,0,0,0.58); }
+    .touchBtn.jump { width: 96px; height: 96px; border-radius: 28px; background: rgba(124,255,138,0.22); border: 1px solid rgba(124,255,138,0.35); }
+    @media (pointer: coarse), (max-width: 820px) {
+      #mobileControls { display: flex; }
+      #ui { top: 10px; left: 10px; right: 10px; min-width: 0; }
+      #ui .small { font-size: 11px; }
+    }
+    @media (pointer: fine) {
+      #mobileControls { display: none; }
+    }
+  </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
+  <div id="ui">
+    <div class="title">Yunus Obby</div>
+    <div class="row"><span>Bölüm</span><strong id="level">1 / 5</strong></div>
+    <div class="row"><span>Checkpoint</span><strong id="checkpointCount">0</strong></div>
+    <div class="row"><span>Zıplama</span><strong>Çift Zıplama</strong></div>
+    <div id="barWrap"><div id="bar"></div></div>
+    <div class="small">Mobil: ◀ ▶ ve Zıpla | Klavye: A/D veya ← →, Space / W / ↑ | Amaç: yeşil bitişe ulaş</div>
+  </div>
 
-        <div id="ui">
-            <div id="goldDisplay">💰 Altın: 0</div>
-            <div id="charInfo">Karakter: -</div>
-            <canvas id="minimap"></canvas>
-            <div id="messageBox"></div>
-
-            <div id="saveStatus">● Giriş bekleniyor</div>
-
-            <div id="loginOverlay" class="menu-overlay" style="display:flex; z-index:2000;">
-                <div class="menu-title">🔐 Giriş Yap</div>
-                <div style="color:white; max-width:80%; text-align:center; line-height:1.6; margin-bottom:10px;">
-                    Kullanıcı adını yaz ve gir. Coin, satın alınan karakterler ve son seçimin kaydedilir.
-                </div>
-                <input id="usernameInput" type="text" maxlength="20" placeholder="Kullanıcı adı">
-                <button class="menu-btn" id="btnLogin">Giriş / Kaydet</button>
-                <div id="loginStatus" class="small-note"></div>
-                <div class="small-note">Not: Bu sistem parola yerine kullanıcı adı profili kullanır. Firebase kayıtları için uygun bir web yayını gerekir; çevrimdışı olursa yerel kayda düşer.</div>
-            </div>
-
-            <div id="controls">
-                <div class="d-pad">
-                    <div class="d-btn d-up" id="btnUp">▲</div>
-                    <div class="d-btn d-down" id="btnDown">▼</div>
-                    <div class="d-btn d-left" id="btnLeft">◀</div>
-                    <div class="d-btn d-right" id="btnRight">▶</div>
-                </div>
-            </div>
-
-            <div id="actionButtons">
-                <button class="action-btn" id="btnJump">Zıpla</button>
-                <button class="action-btn" id="btnCrouch">Eğil</button>
-                <button class="action-btn" id="btnAction">Etkileşim</button>
-                <button class="action-btn" id="btnSpecial">Özel</button>
-            </div>
-        </div>
-
-        <!-- Ana Menü -->
-        <div id="mainMenu" class="menu-overlay" style="display:flex;">
-            <div class="menu-title">🏙️ ŞEHİR MACERASI</div>
-            <button class="menu-btn" onclick="showCharSelect()">🎮 Oyuna Başla</button>
-            <button class="menu-btn" onclick="showShop()">🛒 Dükkan</button>
-            <button class="menu-btn" onclick="showHowToPlay()">❓ Nasıl Oynanır?</button>
-        </div>
-
-        <!-- Karakter Seçim -->
-        <div id="charSelect" class="menu-overlay">
-            <button class="back-btn" onclick="showMainMenu()">◀ Geri</button>
-            <button class="back-btn" style="left:auto; right:10px; background:#6b4cff;" onclick="showShop()">🛒 Dükkana Dön</button>
-            <div class="menu-title">🎭 Karakter Seç</div>
-            <div class="char-header">Karakterleri kartlardan seç. Her karakterin özel yeteneği aşağıda yazıyor. Özel butonla kullanılır.</div>
-            <div class="char-grid" id="charGrid"></div>
-        </div>
-
-        <!-- Dükkan -->
-        <div id="shopMenu" class="menu-overlay">
-            <button class="back-btn" onclick="showMainMenu()">◀ Geri</button>
-            <button class="back-btn" style="left:auto; right:10px; background:#6b4cff;" onclick="showCharSelect()">🎭 Karakterler</button>
-            <div class="menu-title">🛒 Dükkan</div>
-            <div class="shop-grid" id="shopGrid"></div>
-        </div>
-
-        <!-- İş Menüsü -->
-        <div id="jobMenu" class="menu-overlay">
-            <button class="back-btn" onclick="closeJobMenu()">◀ Geri</button>
-            <div class="menu-title" id="jobTitle">💼 İş Seç</div>
-            <div id="jobContent"></div>
-        </div>
-
-        <!-- Nasıl Oynanır -->
-        <div id="howToPlay" class="menu-overlay" style="display:none;">
-            <button class="back-btn" onclick="showMainMenu()">◀ Geri</button>
-            <div class="menu-title">❓ Nasıl Oynanır?</div>
-            <div style="color:white; max-width:80%; text-align:center; line-height:1.6;">
-                <p>🎮 <b>Hareket:</b> Yön tuşları veya WASD</p>
-                <p>⬆️ <b>Zıpla:</b> Space / Zıpla butonu</p>
-                <p>⬇️ <b>Eğil:</b> Ctrl / Eğil butonu</p>
-                <p>🅰️ <b>Etkileşim:</b> E / Etkileşim butonu</p>
-                <p>✨ <b>Özel:</b> Q / Özel butonu</p>
-                <p>💰 <b>İş yap:</b> Dükkanlara git ve çalış</p>
-                <p>⚠️ <b>Dikkat:</b> Hırsızlar ve polisler var!</p>
-            </div>
-        </div>
+  <div id="centerMsg">
+    <div class="card">
+      <div class="big" id="msgTitle">Hazır!</div>
+      <div class="hint" id="msgText">İlk bölüm başlıyor.</div>
+      <button id="btnRestart">Yeniden Başlat</button>
     </div>
+  </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+  <div id="mobileControls" aria-label="Mobil kontrol">
+    <div class="padGroup">
+      <button class="touchBtn" id="btnLeft">◀</button>
+      <button class="touchBtn" id="btnRight">▶</button>
+    </div>
+    <div class="padGroup">
+      <button class="touchBtn jump" id="btnJump">Zıpla</button>
+    </div>
+  </div>
 
-// ==================== FIREBASE ====================
-const firebaseConfig = {
-    apiKey: "AIzaSyAfeUYlfREYXH-oHgt9RqOkKQMV4JOGRZ0",
-    authDomain: "sdfdf-3b247.firebaseapp.com",
-    projectId: "sdfdf-3b247",
-    storageBucket: "sdfdf-3b247.firebasestorage.app",
-    messagingSenderId: "242181377675",
-    appId: "1:242181377675:web:0c9e21e168ab48af390e8e",
-    measurementId: "G-QKV5KXKT2B"
-};
+  <canvas id="gameCanvas"></canvas>
 
-let app = null;
-let db = null;
-let firebaseReady = false;
+  <script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const levelEl = document.getElementById('level');
+  const checkpointCountEl = document.getElementById('checkpointCount');
+  const barEl = document.getElementById('bar');
+  const centerMsg = document.getElementById('centerMsg');
+  const msgTitle = document.getElementById('msgTitle');
+  const msgText = document.getElementById('msgText');
+  const btnRestart = document.getElementById('btnRestart');
 
-try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    firebaseReady = true;
-} catch (err) {
-    console.warn("Firebase başlatılamadı, yerel kayıt kullanılacak.", err);
-}
+  const DPR = Math.max(1, window.devicePixelRatio || 1);
+  function resize() {
+    canvas.width = Math.floor(window.innerWidth * DPR);
+    canvas.height = Math.floor(window.innerHeight * DPR);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
 
-// ==================== OYUN VERİLERİ ====================
-const CHARACTERS = {
-    poyraz: {
-        name: "Poyraz",
-        price: 0,
-        color: "#8B4513",
-        speed: 1,
-        emoji: "😭",
-        desc: "Hemen yere düşer, kafasında kaka var, ağlar",
-        special: "yere_duser",
-        size: 1
+  const keys = Object.create(null);
+  window.addEventListener('keydown', e => { keys[e.code] = true; });
+  window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+  const touchState = { left: false, right: false, jumpPressed: false };
+  const btnLeft = document.getElementById('btnLeft');
+  const btnRight = document.getElementById('btnRight');
+  const btnJump = document.getElementById('btnJump');
+
+  function bindHoldButton(el, onDown, onUp) {
+    const down = (e) => { e.preventDefault(); onDown(); };
+    const up = (e) => { e.preventDefault(); onUp(); };
+    el.addEventListener('pointerdown', down, { passive: false });
+    el.addEventListener('pointerup', up, { passive: false });
+    el.addEventListener('pointercancel', up, { passive: false });
+    el.addEventListener('pointerleave', up, { passive: false });
+    el.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  bindHoldButton(btnLeft, () => touchState.left = true, () => touchState.left = false);
+  bindHoldButton(btnRight, () => touchState.right = true, () => touchState.right = false);
+  btnJump.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    touchState.jumpPressed = true;
+    keys['Space'] = true;
+  }, { passive: false });
+  const clearJump = (e) => {
+    e.preventDefault();
+    touchState.jumpPressed = false;
+    keys['Space'] = false;
+  };
+  btnJump.addEventListener('pointerup', clearJump, { passive: false });
+  btnJump.addEventListener('pointercancel', clearJump, { passive: false });
+  btnJump.addEventListener('pointerleave', clearJump, { passive: false });
+  btnJump.addEventListener('contextmenu', e => e.preventDefault());
+
+  const world = {
+    currentLevel: 0,
+    checkpoints: 0,
+    cameraX: 0,
+    cameraY: 0,
+    shake: 0,
+    particles: [],
+    clouds: [],
+    messageTimer: 0,
+    finished: false
+  };
+
+  const levels = [
+    {
+      name: 'Isınma',
+      spawn: { x: 80, y: 420 },
+      width: 1800,
+      blocks: [
+        { x: 0, y: 500, w: 360, h: 60, type: 'solid' },
+        { x: 300, y: 450, w: 120, h: 24, type: 'solid' },
+        { x: 470, y: 405, w: 120, h: 24, type: 'solid' },
+        { x: 650, y: 360, w: 120, h: 24, type: 'solid' },
+        { x: 840, y: 330, w: 140, h: 24, type: 'checkpoint' },
+        { x: 1040, y: 360, w: 130, h: 24, type: 'solid' },
+        { x: 1235, y: 400, w: 170, h: 24, type: 'solid' },
+        { x: 1450, y: 360, w: 130, h: 24, type: 'solid' },
+        { x: 1640, y: 320, w: 120, h: 24, type: 'finish' }
+      ],
+      hazards: [
+        { x: 560, y: 480, w: 70, h: 20, type: 'lava' },
+        { x: 1180, y: 480, w: 50, h: 20, type: 'lava' }
+      ],
+      movers: []
     },
-    asya: {
-        name: "Asya",
-        price: 5,
-        color: "#FF69B4",
-        speed: 5,
-        emoji: "🪨",
-        desc: "Boyu 1cm, NPC'ler görmez, sesini duyar",
-        special: "ucucu",
-        size: 0.3
+    {
+      name: 'Hareketli Köprü',
+      spawn: { x: 70, y: 430 },
+      width: 2200,
+      blocks: [
+        { x: 0, y: 500, w: 240, h: 60, type: 'solid' },
+        { x: 1780, y: 500, w: 320, h: 60, type: 'solid' },
+        { x: 430, y: 420, w: 120, h: 24, type: 'solid' },
+        { x: 820, y: 360, w: 120, h: 24, type: 'solid' },
+        { x: 1160, y: 320, w: 150, h: 24, type: 'checkpoint' },
+        { x: 1460, y: 360, w: 120, h: 24, type: 'solid' },
+        { x: 1990, y: 420, w: 110, h: 24, type: 'finish' }
+      ],
+      hazards: [
+        { x: 250, y: 500, w: 1500, h: 60, type: 'lava' }
+      ],
+      movers: [
+        { x: 300, y: 430, w: 90, h: 18, axis: 'y', amp: 70, speed: 0.025, phase: 0.2 },
+        { x: 620, y: 385, w: 90, h: 18, axis: 'y', amp: 90, speed: 0.03, phase: 1.4 },
+        { x: 980, y: 340, w: 100, h: 18, axis: 'y', amp: 60, speed: 0.026, phase: 2.1 },
+        { x: 1320, y: 360, w: 100, h: 18, axis: 'y', amp: 90, speed: 0.032, phase: 0.9 }
+      ]
     },
-    tuna: {
-        name: "Tuna",
-        price: 10,
-        color: "#4169E1",
-        speed: 10,
-        emoji: "💪",
-        desc: "Kemerle saldırır, Asya ile evli",
-        special: "kemer",
-        size: 1
+    {
+      name: 'Yükselen Yol',
+      spawn: { x: 80, y: 430 },
+      width: 2400,
+      blocks: [
+        { x: 0, y: 500, w: 280, h: 60, type: 'solid' },
+        { x: 1850, y: 500, w: 450, h: 60, type: 'solid' },
+        { x: 420, y: 430, w: 110, h: 22, type: 'solid' },
+        { x: 640, y: 380, w: 110, h: 22, type: 'solid' },
+        { x: 860, y: 330, w: 110, h: 22, type: 'solid' },
+        { x: 1080, y: 280, w: 110, h: 22, type: 'checkpoint' },
+        { x: 1400, y: 240, w: 130, h: 22, type: 'solid' },
+        { x: 1650, y: 200, w: 130, h: 22, type: 'solid' },
+        { x: 2050, y: 260, w: 120, h: 22, type: 'finish' }
+      ],
+      hazards: [
+        { x: 300, y: 500, w: 1500, h: 60, type: 'lava' }
+      ],
+      movers: [
+        { x: 300, y: 450, w: 86, h: 18, axis: 'x', amp: 120, speed: 0.02, phase: 0.0 },
+        { x: 760, y: 405, w: 86, h: 18, axis: 'x', amp: 130, speed: 0.022, phase: 1.1 },
+        { x: 1180, y: 355, w: 86, h: 18, axis: 'x', amp: 110, speed: 0.024, phase: 2.5 },
+        { x: 1500, y: 305, w: 86, h: 18, axis: 'x', amp: 120, speed: 0.025, phase: 0.6 }
+      ]
     },
-    aydin: {
-        name: "Aydın",
-        price: 25,
-        color: "#FF6347",
-        speed: 30,
-        emoji: "🥊",
-        desc: "Tek kaşlı, koca ağızlı, güreşte iyi",
-        special: "yumruk",
-        size: 1.2
+    {
+      name: 'Zeka Parkuru',
+      spawn: { x: 70, y: 430 },
+      width: 2600,
+      blocks: [
+        { x: 0, y: 500, w: 280, h: 60, type: 'solid' },
+        { x: 2300, y: 500, w: 300, h: 60, type: 'solid' },
+        { x: 430, y: 430, w: 110, h: 22, type: 'solid' },
+        { x: 740, y: 390, w: 110, h: 22, type: 'solid' },
+        { x: 1060, y: 350, w: 140, h: 22, type: 'checkpoint' },
+        { x: 1380, y: 310, w: 110, h: 22, type: 'solid' },
+        { x: 1700, y: 270, w: 110, h: 22, type: 'solid' },
+        { x: 2060, y: 230, w: 120, h: 22, type: 'solid' },
+        { x: 2460, y: 250, w: 90, h: 22, type: 'finish' }
+      ],
+      hazards: [
+        { x: 300, y: 500, w: 2000, h: 60, type: 'lava' }
+      ],
+      movers: [
+        { x: 560, y: 450, w: 90, h: 18, axis: 'y', amp: 95, speed: 0.03, phase: 0.4 },
+        { x: 910, y: 405, w: 90, h: 18, axis: 'y', amp: 110, speed: 0.026, phase: 1.9 },
+        { x: 1260, y: 370, w: 90, h: 18, axis: 'y', amp: 100, speed: 0.029, phase: 0.8 },
+        { x: 1540, y: 330, w: 90, h: 18, axis: 'y', amp: 90, speed: 0.028, phase: 2.4 },
+        { x: 1880, y: 290, w: 90, h: 18, axis: 'y', amp: 80, speed: 0.025, phase: 1.2 }
+      ]
     },
-    therock: {
-        name: "The Rock",
-        price: 50,
-        color: "#8B0000",
-        speed: 20,
-        emoji: "🪨",
-        desc: "Asya'nın babası, kaslı, kel, kaş kaldırma",
-        special: "kas_kaldir",
-        size: 1.4
-    },
-    irfan: {
-        name: "İrfan Enişte",
-        price: 75,
-        color: "#556B2F",
-        speed: 15,
-        emoji: "😴",
-        desc: "Çok uyur, horlar, burun delikleri büyük",
-        special: "horlama",
-        size: 1.3
-    },
-    kelodayi: {
-        name: "Kelo Dayı",
-        price: 100,
-        color: "#DAA520",
-        speed: 10,
-        emoji: "🌪️",
-        desc: "Geğirirse deprem olur, iğrenç",
-        special: "gegirme",
-        size: 1.2
-    },
-    yogurtnine: {
-        name: "Yoğurt Nine",
-        price: 125,
-        color: "#F5F5DC",
-        speed: 8,
-        emoji: "🥣",
-        desc: "Yoğurt atar, herkes sever",
-        special: "yogurt",
-        size: 0.9
-    },
-    mustafa: {
-        name: "Mustafa Dayı",
-        price: 150,
-        color: "#8B008B",
-        speed: 2,
-        emoji: "💨",
-        desc: "Osurursa evren yıkılır, şişko, bezli",
-        special: "osuruk",
-        size: 1.5
+    {
+      name: 'Final Sprint',
+      spawn: { x: 70, y: 430 },
+      width: 3000,
+      blocks: [
+        { x: 0, y: 500, w: 260, h: 60, type: 'solid' },
+        { x: 2700, y: 500, w: 300, h: 60, type: 'solid' },
+        { x: 380, y: 430, w: 120, h: 22, type: 'solid' },
+        { x: 620, y: 390, w: 120, h: 22, type: 'solid' },
+        { x: 890, y: 350, w: 120, h: 22, type: 'solid' },
+        { x: 1180, y: 310, w: 150, h: 22, type: 'checkpoint' },
+        { x: 1490, y: 270, w: 120, h: 22, type: 'solid' },
+        { x: 1790, y: 230, w: 120, h: 22, type: 'solid' },
+        { x: 2110, y: 190, w: 120, h: 22, type: 'solid' },
+        { x: 2440, y: 230, w: 130, h: 22, type: 'solid' },
+        { x: 2820, y: 250, w: 110, h: 22, type: 'finish' }
+      ],
+      hazards: [
+        { x: 260, y: 500, w: 2400, h: 60, type: 'lava' }
+      ],
+      movers: [
+        { x: 500, y: 455, w: 94, h: 18, axis: 'x', amp: 100, speed: 0.025, phase: 0.7 },
+        { x: 770, y: 415, w: 94, h: 18, axis: 'x', amp: 120, speed: 0.027, phase: 2.1 },
+        { x: 1040, y: 375, w: 94, h: 18, axis: 'x', amp: 120, speed: 0.03, phase: 1.1 },
+        { x: 1380, y: 335, w: 94, h: 18, axis: 'x', amp: 110, speed: 0.028, phase: 2.8 },
+        { x: 1670, y: 295, w: 94, h: 18, axis: 'x', amp: 100, speed: 0.025, phase: 0.4 },
+        { x: 1960, y: 255, w: 94, h: 18, axis: 'x', amp: 110, speed: 0.026, phase: 1.4 },
+        { x: 2260, y: 295, w: 94, h: 18, axis: 'x', amp: 100, speed: 0.024, phase: 2.2 }
+      ]
     }
-};
+  ];
 
-const JOBS = {
-    donerci: {
-        name: "Dönerci",
-        emoji: "🥙",
-        color: "#D2691E",
-        income: 1,
-        description: "Müşteri başına 1 altın",
-        products: [
-            { name: "Döner", price: 2, emoji: "🥙" },
-            { name: "Kola", price: 1, emoji: "🥤" }
-        ]
-    },
-    mcdonalds: {
-        name: "McDonald's",
-        emoji: "🍔",
-        color: "#FFD700",
-        income: 2,
-        description: "Müşteri başına 2 altın",
-        products: [
-            { name: "Hamburger", price: 5, emoji: "🍔" },
-            { name: "Kola", price: 1, emoji: "🥤" },
-            { name: "Patates", price: 2, emoji: "🍟" },
-            { name: "Grimace Shake", price: 3, emoji: "🥤" }
-        ]
-    },
-    dilencilik: {
-        name: "Dilencilik",
-        emoji: "🙏",
-        color: "#808080",
-        income: 0,
-        description: "Şansına göre 0-1 altın, hırsız riski var!",
-        products: []
+  const COLORS = {
+    playerHead: '#ffdbac',
+    playerBody: '#1fd16f',
+    playerLegs: '#2d6bff',
+    outline: 'rgba(0,0,0,0.18)',
+    solid: '#ffffff',
+    checkpoint: '#ffdf4d',
+    finish: '#50e36e',
+    lava: '#ff5c2e'
+  };
+
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function rectsOverlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  class Particle {
+    constructor(x, y, vx, vy, life, size, color) {
+      this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+      this.life = life; this.maxLife = life; this.size = size; this.color = color;
     }
-};
+    update(dt) {
+      this.life -= dt;
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+      this.vy += 0.8 * dt;
+    }
+    draw(ctx, camX, camY) {
+      const a = clamp(this.life / this.maxLife, 0, 1);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x - camX, this.y - camY, this.size * a, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
 
-const STORAGE_PREFIX = 'sehir_macerasi_profile_';
-const SAVE_DOCS = 'cityProfiles';
+  class Platform {
+    constructor(def) {
+      Object.assign(this, def);
+      this.baseX = def.x; this.baseY = def.y;
+      this.prevX = def.x; this.prevY = def.y;
+      this.vx = 0; this.vy = 0;
+    }
+    update(time) {
+      this.prevX = this.x; this.prevY = this.y;
+      if (this.axis === 'x') {
+        this.x = this.baseX + Math.sin(time * this.speed + (this.phase || 0)) * this.amp;
+      } else {
+        this.y = this.baseY + Math.sin(time * this.speed + (this.phase || 0)) * this.amp;
+      }
+      this.vx = this.x - this.prevX;
+      this.vy = this.y - this.prevY;
+    }
+    draw(ctx, camX, camY) {
+      drawBlock(ctx, this.x, this.y, this.w, this.h, 'solid', camX, camY, true);
+    }
+  }
 
-// ==================== OYUN DURUMU ====================
-let canvas, ctx, minimap, minimapCtx;
-let gameState = 'menu';
-let player = null;
-let gold = 0;
-let unlockedChars = ['poyraz'];
-let currentChar = 'poyraz';
-let keys = {};
-let camera = { x: 0, y: 0 };
-let mapWidth = 2000;
-let mapHeight = 2000;
-let currentUsername = '';
-let profileLoaded = false;
-let saveTimer = null;
-let statusTimer = null;
-let lastTime = 0;
-let worldGenerated = false;
+  class Player {
+    constructor() {
+      this.w = 30; this.h = 46;
+      this.resetAll();
+    }
+    resetAll() {
+      this.x = 0; this.y = 0; this.vx = 0; this.vy = 0;
+      this.grounded = false; this.groundObj = null;
+      this.coyote = 0; this.jumpBuffer = 0; this.doubleJumpUsed = false;
+      this.face = 1; this.anim = 0; this.alive = true;
+      this.respawn();
+    }
+    respawn() {
+      const level = levels[world.currentLevel];
+      const cp = level.checkpoint || level.spawn;
+      this.x = cp.x;
+      this.y = cp.y;
+      this.vx = 0; this.vy = 0; this.grounded = false; this.groundObj = null;
+      this.coyote = 0; this.jumpBuffer = 0; this.doubleJumpUsed = false;
+      world.shake = Math.max(world.shake, 6);
+      spawnBurst(this.x + this.w / 2, this.y + this.h / 2, '#ffffff', 10);
+    }
+    requestJump() { this.jumpBuffer = 0.14; }
+    jump() {
+      this.vy = -11.4;
+      this.grounded = false;
+      this.coyote = 0;
+      this.doubleJumpUsed = true;
+      spawnBurst(this.x + this.w / 2, this.y + this.h, '#bafcff', 8);
+    }
+    update(dt) {
+      const left = keys['ArrowLeft'] || keys['KeyA'] || touchState.left;
+      const right = keys['ArrowRight'] || keys['KeyD'] || touchState.right;
+      const jumpKey = keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || touchState.jumpPressed;
 
-let npcs = [];
-let buildings = [];
-let destructibles = [];
-let thieves = [];
-let police = [];
-let particles = [];
-let dialogues = [];
+      if (jumpKey) this.jumpBuffer = Math.max(this.jumpBuffer, 0.12);
+      else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
-let thiefSpawnTimer = 0;
-let policeTimer = 0;
-let workTimer = 0;
-let isWorking = false;
-let currentJob = null;
-let invisibleUntil = 0;
-let specialCooldowns = {
-    osuruk: 0,
-    gegirme: 0,
-    horlama: 0,
-    kas_kaldir: 0,
-    yumruk: 0,
-    yogurt: 0,
-    yere_duser: 0,
-    ucucu: 0,
-    kemer: 0
-};
+      const accel = 0.75;
+      const friction = 0.82;
+      const maxSpeed = 5.2;
+      if (left) { this.vx -= accel * dt * 60; this.face = -1; }
+      if (right) { this.vx += accel * dt * 60; this.face = 1; }
+      if (!left && !right) this.vx *= Math.pow(friction, dt * 60);
+      this.vx = clamp(this.vx, -maxSpeed, maxSpeed);
 
-const genericDialogues = [
-    "Merhaba!", "Günaydın!", "Nasılsın?", "İyi günler!",
-    "Bugün hava güzel!", "İşler nasıl?", "Selam!", "Ne haber?"
-];
+      if (this.grounded) this.coyote = 0.10; else this.coyote = Math.max(0, this.coyote - dt);
+      this.vy += 0.48 * dt * 60;
 
-// ==================== BAŞLANGIÇ ====================
-window.addEventListener('load', init);
+      const jumpNow = this.jumpBuffer > 0;
+      const canJump = this.grounded || this.coyote > 0;
+      if (jumpNow && canJump) {
+        this.jumpBuffer = 0;
+        this.jump();
+        touchState.jumpPressed = false;
+        keys['Space'] = false;
+      } else if (jumpNow && !this.doubleJumpUsed && !this.grounded && this.coyote <= 0) {
+        this.jumpBuffer = 0;
+        this.vy = -10.2;
+        this.doubleJumpUsed = true;
+        spawnBurst(this.x + this.w / 2, this.y + this.h / 2, '#ffd166', 7);
+      }
 
-function init() {
-    canvas = document.getElementById('gameCanvas');
-    ctx = canvas.getContext('2d');
-    minimap = document.getElementById('minimap');
-    minimapCtx = minimap.getContext('2d');
+      this.grounded = false;
+      this.groundObj = null;
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+      // Horizontal move
+      this.x += this.vx;
+      resolveCollisions(this, 'x');
 
-    setupControls();
-    setupLogin();
-    generateWorld();
-    renderStaticFrame();
-    requestAnimationFrame(gameLoop);
-}
+      // Vertical move
+      this.y += this.vy;
+      resolveCollisions(this, 'y');
 
-function setupLogin() {
-    const input = document.getElementById('usernameInput');
-    const button = document.getElementById('btnLogin');
+      // Carry by platform if standing on it
+      if (this.groundObj && this.groundObj.kind === 'platform') {
+        this.x += this.groundObj.vx;
+        this.y += this.groundObj.vy;
+      }
 
-    const submit = () => loginWithUsername(input.value);
-    button.addEventListener('click', submit);
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') submit();
-    });
-}
+      // Fall reset
+      if (this.y > 900) this.respawn();
 
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    minimap.width = 120;
-    minimap.height = 120;
-}
+      this.anim += (Math.abs(this.vx) + (this.grounded ? 0.4 : 0.1)) * dt * 10;
+    }
+    draw(ctx, camX, camY, time) {
+      const sx = this.x - camX;
+      const sy = this.y - camY;
+      const bob = Math.sin(time * 10) * (this.grounded ? 1.2 : 0.2);
+      const legSwing = Math.sin(this.anim) * (this.grounded ? 5 : 2.5);
+      const armSwing = Math.sin(this.anim + Math.PI) * (this.grounded ? 4 : 1.5);
+      const lean = clamp(this.vx * 0.06, -0.18, 0.18);
 
-function sanitizeUsername(name) {
-    return String(name || '')
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '_')
-        .replace(/[^a-z0-9ğüşöçıİ_]/gi, '')
-        .slice(0, 20);
-}
+      ctx.save();
+      ctx.translate(sx + this.w / 2, sy + this.h / 2 + bob);
+      ctx.rotate(lean);
+      ctx.translate(-this.w / 2, -this.h / 2);
 
-function getLocalProfileKey(username) {
-    return STORAGE_PREFIX + username;
-}
+      // Shadow
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(this.w/2, this.h + 7, 16, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
 
-function defaultProfile(username) {
-    return {
-        username,
-        gold: 0,
-        unlockedChars: ['poyraz'],
-        currentChar: 'poyraz',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-    };
-}
+      // Legs
+      ctx.strokeStyle = COLORS.playerLegs;
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(11, 30);
+      ctx.lineTo(7 + legSwing * 0.12, 44);
+      ctx.moveTo(20, 30);
+      ctx.lineTo(24 - legSwing * 0.12, 44);
+      ctx.stroke();
 
-async function loginWithUsername(rawName) {
-    const loginStatus = document.getElementById('loginStatus');
-    const username = sanitizeUsername(rawName);
+      // Body
+      ctx.fillStyle = COLORS.playerBody;
+      roundRect(ctx, 5, 14, 20, 18, 6, true);
 
-    if (!username || username.length < 3) {
-        loginStatus.textContent = 'En az 3 karakterlik bir kullanıcı adı yaz.';
-        return;
+      // Arms
+      ctx.strokeStyle = COLORS.playerBody;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(5, 19);
+      ctx.lineTo(-1 + armSwing * 0.12, 28);
+      ctx.moveTo(25, 19);
+      ctx.lineTo(31 - armSwing * 0.12, 28);
+      ctx.stroke();
+
+      // Head
+      ctx.fillStyle = COLORS.playerHead;
+      roundRect(ctx, 6, 0, 18, 14, 5, true);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillRect(9, 4, 10, 2);
+
+      // Little shine
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(8, 2, 5, 2);
+
+      ctx.restore();
+    }
+  }
+
+  function roundRect(ctx, x, y, w, h, r, fill = false) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    if (fill) ctx.fill();
+  }
+
+  function drawBlock(ctx, x, y, w, h, type, camX, camY, isPlatform = false) {
+    const sx = x - camX;
+    const sy = y - camY;
+    let fill = COLORS.solid;
+    if (type === 'checkpoint') fill = COLORS.checkpoint;
+    if (type === 'finish') fill = COLORS.finish;
+    if (type === 'lava') fill = COLORS.lava;
+
+    if (type === 'lava') {
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(sx, sy, w, h, 8) : roundRect(ctx, sx, sy, w, h, 8, true);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      for (let i = 0; i < 4; i++) {
+        const px = sx + 10 + i * (w / 4);
+        ctx.beginPath();
+        ctx.arc(px, sy + h/2 + Math.sin((performance.now()/120) + i) * 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
     }
 
-    currentUsername = username;
-    loginStatus.textContent = 'Profil yükleniyor...';
+    // 3D-ish block
+    ctx.fillStyle = fill;
+    roundRect(ctx, sx, sy, w, h, 8, true);
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    roundRect(ctx, sx, sy + h - 6, w, 6, 0, true);
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    roundRect(ctx, sx, sy, w, 5, 8, true);
 
-    let profile = null;
-
-    const localRaw = localStorage.getItem(getLocalProfileKey(username));
-    if (localRaw) {
-        try { profile = JSON.parse(localRaw); } catch {}
+    if (type === 'checkpoint') {
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('CP', sx + 12, sy + 18);
     }
-
-    if (firebaseReady) {
-        try {
-            const ref = doc(db, SAVE_DOCS, username);
-            const snap = await getDoc(ref);
-            if (snap.exists()) {
-                profile = { ...(profile || defaultProfile(username)), ...snap.data() };
-            } else if (!profile) {
-                profile = defaultProfile(username);
-                await setDoc(ref, { ...profile, server: true, updatedAt: serverTimestamp() }, { merge: true });
-            }
-        } catch (err) {
-            console.warn('Firebase profil yüklenemedi, yerel kayıt kullanılacak.', err);
-        }
+    if (type === 'finish') {
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('GOAL', sx + 12, sy + 18);
     }
+  }
 
-    if (!profile) profile = defaultProfile(username);
+  let player = new Player();
+  let currentPlatforms = [];
+  let currentHazards = [];
+  let currentBlocks = [];
+  let levelWidth = 2000;
+  let time = 0;
+  let last = performance.now();
 
-    gold = Number(profile.gold || 0);
-    unlockedChars = Array.isArray(profile.unlockedChars) && profile.unlockedChars.length ? profile.unlockedChars : ['poyraz'];
-    currentChar = unlockedChars.includes(profile.currentChar) ? profile.currentChar : unlockedChars[0];
-    profileLoaded = true;
+  function loadLevel(index) {
+    world.currentLevel = clamp(index, 0, levels.length - 1);
+    const level = levels[world.currentLevel];
+    currentBlocks = level.blocks.map(b => ({ ...b }));
+    currentHazards = level.hazards.map(h => ({ ...h }));
+    currentPlatforms = level.movers.map(m => new Platform(m));
+    levelWidth = level.width;
+    level.checkpoint = null;
+    player.x = level.spawn.x;
+    player.y = level.spawn.y;
+    player.vx = 0;
+    player.vy = 0;
+    player.grounded = false;
+    player.groundObj = null;
+    player.doubleJumpUsed = false;
+    player.coyote = 0;
+    touchState.jumpPressed = false;
+    keys['Space'] = false;
+    updateUi();
+    showMessage(level.name, 'Bölüm başladı. Daha akıcı, daha kolay ve daha uzun hale getirildi.', 1.25);
+  }
 
-    document.getElementById('usernameInput').value = username;
-    document.getElementById('loginOverlay').style.display = 'none';
-    showMainMenu();
+  function updateUi() {
+    const level = levels[world.currentLevel];
+    levelEl.textContent = `${world.currentLevel + 1} / ${levels.length}`;
+    checkpointCountEl.textContent = String(world.checkpoints);
+    const progress = clamp((player.x / Math.max(1, levelWidth)) * 100, 0, 100);
+    barEl.style.width = progress + '%';
+  }
 
-    updateUI();
-    updateCharInfo();
-    saveProfile(true);
-    showMessage(`Hoş geldin, ${username}!`);
-}
+  function showMessage(title, text, seconds = 1.5) {
+    msgTitle.textContent = title;
+    msgText.textContent = text;
+    centerMsg.classList.add('show');
+    btnRestart.style.display = world.finished ? 'inline-block' : 'none';
+    clearTimeout(world.messageTimer);
+    world.messageTimer = setTimeout(() => centerMsg.classList.remove('show'), seconds * 1000);
+  }
 
-function renderStaticFrame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#1f3d11';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+  btnRestart.addEventListener('click', () => restartGame());
 
-function setupControls() {
-    window.addEventListener('keydown', e => {
-        const k = e.key.toLowerCase();
-        keys[k] = true;
-        if (e.key === ' ' || e.key === 'ArrowUp') keys['up'] = true;
-        if (e.key === 'Control' || e.key === 'ArrowDown') keys['down'] = true;
-        if (k === 'e') doAction();
-        if (k === 'q') useSpecialAbility();
-        if (k === 'escape' && gameState === 'playing') showMainMenu();
-    });
-    window.addEventListener('keyup', e => {
-        const k = e.key.toLowerCase();
-        keys[k] = false;
-        if (e.key === ' ' || e.key === 'ArrowUp') keys['up'] = false;
-        if (e.key === 'Control' || e.key === 'ArrowDown') keys['down'] = false;
-    });
+  function restartGame() {
+    world.currentLevel = 0;
+    world.checkpoints = 0;
+    world.finished = false;
+    touchState.left = false;
+    touchState.right = false;
+    touchState.jumpPressed = false;
+    keys['Space'] = false;
+    player.resetAll();
+    loadLevel(0);
+    showMessage('Yeniden Başladı', 'İlk bölüm tekrar başlıyor.', 1.1);
+  }
 
-    const setupTouch = (id, key) => {
-        const btn = document.getElementById(id);
-        const down = e => { e.preventDefault(); keys[key] = true; };
-        const up = e => { e.preventDefault(); keys[key] = false; };
-        btn.addEventListener('touchstart', down, { passive: false });
-        btn.addEventListener('touchend', up, { passive: false });
-        btn.addEventListener('touchcancel', up, { passive: false });
-        btn.addEventListener('mousedown', () => { keys[key] = true; });
-        btn.addEventListener('mouseup', () => { keys[key] = false; });
-        btn.addEventListener('mouseleave', () => { keys[key] = false; });
-    };
+  function spawnBurst(x, y, color, count = 6) {
+    for (let i = 0; i < count; i++) {
+      const a = (Math.PI * 2 * i) / count + Math.random() * 0.6;
+      const s = 1.2 + Math.random() * 2.8;
+      world.particles.push(new Particle(
+        x, y,
+        Math.cos(a) * (40 + Math.random() * 40),
+        Math.sin(a) * (40 + Math.random() * 40) - 30,
+        0.45 + Math.random() * 0.35,
+        s,
+        color
+      ));
+    }
+  }
 
-    setupTouch('btnUp', 'up');
-    setupTouch('btnDown', 'down');
-    setupTouch('btnLeft', 'left');
-    setupTouch('btnRight', 'right');
-
-    document.getElementById('btnJump').addEventListener('click', () => {
-        if (player && !player.jumping && player.stunned <= 0) {
-            player.jumping = true;
-            player.jumpVel = -8;
-            showMessage("Zıpladın!");
-        }
-    });
-
-    document.getElementById('btnCrouch').addEventListener('click', () => {
-        if (player) {
-            player.crouching = !player.crouching;
-            showMessage(player.crouching ? "Eğildin! NPC'lerden daha kolay gizlenirsin." : "Ayağa kalktın!");
-        }
-    });
-
-    document.getElementById('btnAction').addEventListener('click', doAction);
-    const specialBtn = document.getElementById('btnSpecial');
-    if (specialBtn) specialBtn.addEventListener('click', useSpecialAbility);
-}
-
-function generateWorld() {
-    if (worldGenerated) return;
-    worldGenerated = true;
-
-    buildings = [
-        { x: 300, y: 300, w: 120, h: 100, type: 'donerci', name: 'Dönerci', emoji: '🥙' },
-        { x: 600, y: 200, w: 140, h: 120, type: 'mcdonalds', name: "McDonald's", emoji: '🍟' },
-        { x: 900, y: 500, w: 100, h: 80, type: 'dilencilik', name: 'Dilencilik Noktası', emoji: '🙏' },
-        { x: 200, y: 700, w: 100, h: 100, type: 'shop', name: 'Dükkan', emoji: '🛒' },
-        { x: 1200, y: 300, w: 150, h: 100, type: 'park', name: 'Park', emoji: '🌳' },
-        { x: 1500, y: 800, w: 130, h: 110, type: 'donerci', name: 'Dönerci 2', emoji: '🥙' },
-        { x: 400, y: 1100, w: 140, h: 120, type: 'mcdonalds', name: "McDonald's 2", emoji: '🍟' }
-    ];
-
-    destructibles = [
-        { x: 360, y: 420, w: 70, h: 28, hp: 2, maxHp: 2, type: 'duvar', name: 'Tahta Bariyer' },
-        { x: 760, y: 620, w: 90, h: 28, hp: 3, maxHp: 3, type: 'duvar', name: 'Kırılgan Duvar' },
-        { x: 1300, y: 980, w: 120, h: 30, hp: 4, maxHp: 4, type: 'duvar', name: 'Şehir Çiti' },
-        { x: 1650, y: 450, w: 80, h: 28, hp: 2, maxHp: 2, type: 'duvar', name: 'Eski Direk' }
-    ];
-
-    for (let i = 0; i < 30; i++) npcs.push(createNPC());
-    for (let i = 0; i < 5; i++) thieves.push(createThief());
-    for (let i = 0; i < 3; i++) police.push(createPolice());
-}
-
-function createNPC() {
-    return {
-        x: Math.random() * mapWidth,
-        y: Math.random() * mapHeight,
-        vx: (Math.random() - 0.5) * 2,
-        vy: (Math.random() - 0.5) * 2,
-        name: ["Ahmet", "Mehmet", "Ayşe", "Fatma", "Ali", "Veli", "Zeynep", "Emre", "Can", "Berk"][Math.floor(Math.random() * 10)],
-        emoji: "🚶",
-        color: `hsl(${Math.random() * 360}, 50%, 50%)`,
-        dialogue: genericDialogues[Math.floor(Math.random() * genericDialogues.length)],
-        speech: '',
-        speechTime: 0,
-        speechCooldown: Math.random() * 3 + 1,
-        hasGold: Math.random() > 0.5,
-        stunned: 0
-    };
-}
-
-function createThief() {
-    return {
-        x: Math.random() * mapWidth,
-        y: Math.random() * mapHeight,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
-        emoji: "🦹",
-        stealing: false,
-        stealTimer: 0,
-        caught: false
-    };
-}
-
-function createPolice() {
-    return {
-        x: Math.random() * mapWidth,
-        y: Math.random() * mapHeight,
-        vx: 0,
-        vy: 0,
-        emoji: "👮",
-        chasing: false,
-        target: null
-    };
-}
-
-function gameLoop(timestamp) {
-    const dt = Math.min(0.033, (timestamp - lastTime) / 1000 || 0);
-    lastTime = timestamp;
-
-    if (gameState === 'playing') {
-        update(dt);
-        render();
-        renderMinimap();
+  function goNextLevel() {
+    if (world.currentLevel < levels.length - 1) {
+      showMessage('Bölüm Geçildi!', 'Sonraki bölüm açılıyor...', 1.1);
+      setTimeout(() => loadLevel(world.currentLevel + 1), 450);
     } else {
-        renderStaticFrame();
+      world.finished = true;
+      showMessage('Tebrikler!', 'Tüm bölümler tamamlandı.', 999);
+      btnRestart.style.display = 'inline-block';
+      centerMsg.classList.add('show');
+    }
+  }
+
+  function drawBackground(camX) {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#8ad7ff');
+    grad.addColorStop(0.6, '#c8f1ff');
+    grad.addColorStop(1, '#eefcff');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Far clouds
+    for (const c of world.clouds) {
+      const x = (c.x - camX * c.parallax + c.w * 2) % (levelWidth + 500) - 250;
+      const y = c.y;
+      ctx.globalAlpha = 0.34;
+      ctx.fillStyle = '#fff';
+      blobCloud(x, y, c.s);
+      ctx.globalAlpha = 1;
     }
 
-    requestAnimationFrame(gameLoop);
-}
-
-function update(dt) {
-    if (!player) return;
-
-    Object.keys(specialCooldowns).forEach(k => {
-        specialCooldowns[k] = Math.max(0, specialCooldowns[k] - dt);
-    });
-
-    if (player.stunned > 0) player.stunned -= dt;
-
-    let dx = 0, dy = 0;
-    const speed = CHARACTERS[currentChar].speed * (player.crouching ? 0.5 : 1) * 20;
-
-    if (player.stunned <= 0) {
-        if (keys['left'] || keys['a']) dx = -1;
-        if (keys['right'] || keys['d']) dx = 1;
-        if (keys['up'] || keys['w']) dy = -1;
-        if (keys['down'] || keys['s']) dy = 1;
+    // Distant hills
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#65c48a';
+    for (let i = -1; i < 6; i++) {
+      const base = i * 500 - (camX * 0.18) % 500;
+      ctx.beginPath();
+      ctx.ellipse(base + 220, h - 90, 200, 70, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
+    ctx.globalAlpha = 1;
 
-    if (dx !== 0 && dy !== 0) {
-        dx *= 0.707;
-        dy *= 0.707;
+    // Ground
+    ctx.fillStyle = '#86d86a';
+    ctx.fillRect(0, h - 52, w, 52);
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
+    for (let x = -((camX * 0.35) % 46); x < w + 50; x += 46) {
+      ctx.fillRect(x, h - 52, 24, 52);
     }
+  }
 
-    player.x += dx * speed * dt;
-    player.y += dy * speed * dt;
+  function blobCloud(x, y, s) {
+    ctx.beginPath(); ctx.arc(x, y, 18 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 20 * s, y + 5 * s, 24 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 44 * s, y, 16 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 28 * s, y - 12 * s, 18 * s, 0, Math.PI * 2); ctx.fill();
+  }
 
-    if (player.jumping) {
-        player.jumpY += player.jumpVel;
-        player.jumpVel += 0.5;
-        if (player.jumpY >= 0) {
-            player.jumpY = 0;
-            player.jumping = false;
-        }
-    }
-
-    player.x = Math.max(20, Math.min(mapWidth - 20, player.x));
-    player.y = Math.max(20, Math.min(mapHeight - 20, player.y));
-
-    camera.x = Math.max(0, Math.min(mapWidth - canvas.width, player.x - canvas.width / 2));
-    camera.y = Math.max(0, Math.min(mapHeight - canvas.height, player.y - canvas.height / 2));
-
-    const nearestNpc = getNearestEntity(npcs, player.x, player.y, 90);
-
-    npcs.forEach(npc => {
-        if (npc.stunned > 0) {
-            npc.stunned -= dt;
-            return;
-        }
-
-        npc.x += npc.vx * 30 * dt;
-        npc.y += npc.vy * 30 * dt;
-
-        if (npc.x < 0 || npc.x > mapWidth) npc.vx *= -1;
-        if (npc.y < 0 || npc.y > mapHeight) npc.vy *= -1;
-
-        const dist = Math.hypot(player.x - npc.x, player.y - npc.y);
-        const isInvisible = currentChar === 'asya' && Date.now() < invisibleUntil;
-
-        if (!isInvisible && dist < 60 && npc === nearestNpc && npc.speechCooldown <= 0 && Math.random() < 0.5) {
-            npc.speech = pickNpcDialogue(npc);
-            npc.speechTime = 2.2;
-            npc.speechCooldown = 4 + Math.random() * 3;
-        }
-
-        if (npc.speechCooldown > 0) npc.speechCooldown -= dt;
-        if (npc.speechTime > 0) npc.speechTime -= dt;
-
-        if (!isInvisible && dist < 60 && player.crouching && npc.hasGold && Math.random() < 0.01) {
-            addGold(1);
-            npc.hasGold = false;
-            showMessage("1 altın çaldın!");
-            spawnPolice();
-        }
-    });
-
-    thieves.forEach(thief => {
-        thief.x += thief.vx * 40 * dt;
-        thief.y += thief.vy * 40 * dt;
-
-        if (thief.x < 0 || thief.x > mapWidth) thief.vx *= -1;
-        if (thief.y < 0 || thief.y > mapHeight) thief.vy *= -1;
-
-        const dist = Math.hypot(player.x - thief.x, player.y - thief.y);
-
-        if (dist < 50 && !thief.caught) {
-            if (Math.random() < 0.008 && gold >= 5) {
-                spendGold(5);
-                showMessage("🦹 Hırsız 5 altın çaldı!");
-                thief.stealing = true;
-                thief.stealTimer = 2;
-            }
-        }
-
-        if (thief.stealing) thief.stealTimer -= dt;
-        if (thief.stealing && thief.stealTimer <= 0) thief.stealing = false;
-
-        if (dist < 40 && keys['e'] && thief.stealing) {
-            const playerSpeed = CHARACTERS[currentChar].speed;
-            if (playerSpeed > 10) {
-                addGold(5);
-                thief.caught = true;
-                thief.x = Math.random() * mapWidth;
-                thief.y = Math.random() * mapHeight;
-                thief.caught = false;
-                thief.stealing = false;
-                showMessage("Hırsızı yakaladın! 5 altın geri aldın!");
-            }
-        }
-    });
-
-    police.forEach(cop => {
-        if (cop.chasing && cop.target) {
-            const dx = cop.target.x - cop.x;
-            const dy = cop.target.y - cop.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist > 5) {
-                cop.x += (dx / dist) * 60 * dt;
-                cop.y += (dy / dist) * 60 * dt;
-            }
-
-            if (dist < 40) {
-                const penalty = Math.min(gold, 10);
-                spendGold(penalty);
-                showMessage(`👮 Polis seni yakaladı! ${penalty} altın ceza!`);
-                cop.chasing = false;
-                cop.target = null;
-                cop.x = Math.random() * mapWidth;
-                cop.y = Math.random() * mapHeight;
-            }
-        } else {
-            cop.x += cop.vx * 20 * dt;
-            cop.y += cop.vy * 20 * dt;
-            if (Math.random() < 0.02) {
-                cop.vx = (Math.random() - 0.5) * 2;
-                cop.vy = (Math.random() - 0.5) * 2;
-            }
-        }
-
-        if (cop.x < 0 || cop.x > mapWidth) cop.vx *= -1;
-        if (cop.y < 0 || cop.y > mapHeight) cop.vy *= -1;
-    });
-
-    updateSpecialAbilities(dt);
-
-    particles = particles.filter(p => {
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        return p.life > 0;
-    });
-
-    updateUI();
-}
-
-function pickNpcDialogue(npc) {
-    const charSpec = CHARACTERS[currentChar];
-    const specialLines = {
-        poyraz: ["Poyraz yine yere düştü!", "Kaka kafalı geliyor!", "Ağlama sesi duyuluyor."],
-        asya: ["Boyun küçük ama sesin büyük.", "Taşı seçtim, rahat ol.", "Seni göremedim bile!"],
-        tuna: ["Kemer nerde?", "Evli misin gerçekten?", "Asya seni çağırıyor!"],
-        aydin: ["Tek kaşlı geliyor!", "Aman uzak dur!", "Yumruk mu geliyor?"],
-        therock: ["Kaş kalktı!", "Rock geldi!", "Kaslar konuşuyor."],
-        irfan: ["Horlama başladı...", "Uykulu enerji!", "Enişte dinleniyor."],
-        kelodayi: ["Deprem olabilir!", "Geğirme sesi yakında.", "Koş koş!"],
-        yogurtnine: ["Yoğurt hazır!", "Nine kurtarıcı!", "Sütlü bir şeyler var."],
-        mustafa: ["Evren gergin.", "Dayı gazlı modda.", "Kaç biraz!"]
-    };
-
-    const arr = (charSpec && specialLines[currentChar]) ? specialLines[currentChar] : [npc.dialogue, ...genericDialogues];
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function getNearestEntity(list, x, y, maxDist) {
-    let best = null;
-    let bestDist = maxDist;
-    for (const item of list) {
-        const d = Math.hypot(item.x - x, item.y - y);
-        if (d < bestDist) {
-            bestDist = d;
-            best = item;
-        }
-    }
-    return best;
-}
-
-function damageDestructibles(centerX, centerY, radius, damage, sourceLabel) {
-    let hitCount = 0;
-    destructibles.forEach(obj => {
-        const ox = obj.x + obj.w / 2;
-        const oy = obj.y + obj.h / 2;
-        const dist = Math.hypot(centerX - ox, centerY - oy);
-        if (dist <= radius) {
-            obj.hp -= damage;
-            hitCount++;
-            if (obj.hp <= 0) {
-                obj.broken = true;
-                obj.brokenAt = Date.now();
-            }
-        }
-    });
-    destructibles = destructibles.filter(obj => !obj.broken);
-    if (hitCount > 0) {
-        showMessage(`${sourceLabel} bazı yerleri yıktı!`);
-    }
-}
-
-function applyAoeKnockback(centerX, centerY, radius, power, stunTime = 0) {
-    npcs.forEach(npc => {
-        const dist = Math.hypot(centerX - npc.x, centerY - npc.y);
-        if (dist < radius) {
-            const safe = Math.max(1, dist);
-            npc.vx = (npc.x - centerX) / safe * power;
-            npc.vy = (npc.y - centerY) / safe * power;
-            if (stunTime > 0) npc.stunned = Math.max(npc.stunned, stunTime);
-        }
-    });
-}
-
-function frightenNearby(radius, text) {
-    const npc = getNearestEntity(npcs, player.x, player.y, radius);
-    if (npc) {
-        npc.speech = text;
-        npc.speechTime = 2.5;
-        npc.speechCooldown = 4;
-    }
-}
-
-function updateSpecialAbilities(dt) {
-    const char = CHARACTERS[currentChar];
-
-    // Hafif atmosferik tetiklemeler, ama asıl güç kullanıcı kontrollü özel butonla kullanılır.
-    if (char.special === 'horlama' && specialCooldowns.horlama <= 0 && Math.random() < 0.0003) {
-        specialCooldowns.horlama = 10;
-        showMessage("😴 İrfan içgüdüsel horladı.");
-        applyAoeKnockback(player.x, player.y, 180, 4, 1.2);
-    }
-
-    if (char.special === 'yere_duser' && specialCooldowns.yere_duser <= 0 && Math.random() < 0.00025) {
-        specialCooldowns.yere_duser = 10;
-        showMessage("😭 Poyraz yine yere kapandı.");
-        player.stunned = 1.2;
-    }
-}
-
-function useSpecialAbility() {
-    if (gameState !== 'playing' || !player || player.stunned > 0) return;
-    const char = CHARACTERS[currentChar];
-
-    if (char.special === 'yere_duser') {
-        if (specialCooldowns.yere_duser > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.yere_duser = 6;
-        player.stunned = 1.4;
-        showMessage('😭 Poyraz düştü ve bir şey yapamadı!');
-        return;
-    }
-
-    if (char.special === 'ucucu') {
-        if (specialCooldowns.ucucu > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.ucucu = 8;
-        invisibleUntil = Date.now() + 5000;
-        showMessage("🪨 Asya görünmez oldu! NPC'ler onu duyar ama göremez.");
-        return;
-    }
-
-    if (char.special === 'kemer') {
-        if (specialCooldowns.kemer > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.kemer = 6;
-        showMessage('💪 Tuna kemer savurdu!');
-        applyAoeKnockback(player.x, player.y, 120, 10, 1.2);
-        return;
-    }
-
-    if (char.special === 'yumruk') {
-        if (specialCooldowns.yumruk > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.yumruk = 4;
-        showMessage('🥊 Aydın yumruk attı!');
-        applyAoeKnockback(player.x, player.y, 130, 16, 1.7);
-        return;
-    }
-
-    if (char.special === 'kas_kaldir') {
-        if (specialCooldowns.kas_kaldir > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.kas_kaldir = 7;
-        showMessage('🪨 The Rock kaşını kaldırdı!');
-        applyAoeKnockback(player.x, player.y, 160, 6, 2);
-        return;
-    }
-
-    if (char.special === 'horlama') {
-        if (specialCooldowns.horlama > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.horlama = 7;
-        showMessage('😴 İrfan enişte horladı! Dünya titredi!');
-        applyAoeKnockback(player.x, player.y, 220, 5, 2.5);
-        return;
-    }
-
-    if (char.special === 'gegirme') {
-        if (specialCooldowns.gegirme > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.gegirme = 8;
-        showMessage('🌪️ Kelo Dayı geğirdi! 10.0 deprem!');
-        applyAoeKnockback(player.x, player.y, 230, 7, 3);
-        damageDestructibles(player.x, player.y, 230, 2, 'Kelo Dayı');
-        return;
-    }
-
-    if (char.special === 'yogurt') {
-        if (specialCooldowns.yogurt > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.yogurt = 6;
-        showMessage('🥣 Yoğurt Nine yoğurt fırlattı!');
-        npcs.forEach(npc => {
-            const dist = Math.hypot(player.x - npc.x, player.y - npc.y);
-            if (dist < 120) {
-                npc.speech = 'yapacağın yoğurtu yiyim';
-                npc.speechTime = 2;
-                npc.speechCooldown = 4;
-                npc.stunned = 1.5;
-                const safe = Math.max(1, dist);
-                npc.vx = (npc.x - player.x) / safe * 7;
-                npc.vy = (npc.y - player.y) / safe * 7;
-            }
+  function updateClouds() {
+    if (world.clouds.length === 0) {
+      for (let i = 0; i < 10; i++) {
+        world.clouds.push({
+          x: Math.random() * 3000,
+          y: 60 + Math.random() * 180,
+          s: 0.7 + Math.random() * 1.2,
+          parallax: 0.14 + Math.random() * 0.08
         });
-        return;
+      }
+    }
+  }
+
+  function loop(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+    time += dt;
+    updateClouds();
+
+    const level = levels[world.currentLevel];
+
+    for (const p of currentPlatforms) p.update(time);
+    player.update(dt);
+
+
+    // Update particles
+    for (let i = world.particles.length - 1; i >= 0; i--) {
+      world.particles[i].update(dt * 60);
+      if (world.particles[i].life <= 0) world.particles.splice(i, 1);
     }
 
-    if (char.special === 'osuruk') {
-        if (specialCooldowns.osuruk > 0) return showMessage('Özel yetenek beklemede.');
-        specialCooldowns.osuruk = 10;
-        showMessage('💨 Mustafa Dayı osurdu! 20.2 deprem!');
-        applyAoeKnockback(player.x, player.y, 260, 9, 3);
-        damageDestructibles(player.x, player.y, 260, 3, 'Mustafa Dayı');
-        return;
+    // Camera follow
+    const targetX = clamp(player.x + player.w / 2 - window.innerWidth / 2, 0, Math.max(0, levelWidth - window.innerWidth));
+    const targetY = 0;
+    world.cameraX = lerp(world.cameraX, targetX, 0.12);
+    world.cameraY = lerp(world.cameraY, targetY, 0.08);
+
+    if (world.messageTimer && world.messageTimer > 0) {
+      // no-op, handled by timeout
     }
-}
 
-function spawnPolice() {
-    police.push({
-        x: player.x + 200,
-        y: player.y + 200,
-        vx: 0,
-        vy: 0,
-        emoji: "👮",
-        chasing: true,
-        target: player
-    });
-}
+    updateUi();
 
-// ==================== ÇİZİM ====================
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Screen shake
+    const shakeX = (world.shake > 0) ? (Math.random() * world.shake - world.shake / 2) : 0;
+    const shakeY = (world.shake > 0) ? (Math.random() * world.shake - world.shake / 2) : 0;
+    world.shake = Math.max(0, world.shake - dt * 24);
 
     ctx.save();
-    ctx.translate(-camera.x, -camera.y);
+    ctx.translate(shakeX, shakeY);
+    drawBackground(world.cameraX);
 
-    ctx.fillStyle = '#3a6b1f';
-    ctx.fillRect(0, 0, mapWidth, mapHeight);
+    // World objects
+    for (const p of currentPlatforms) p.draw(ctx, world.cameraX, world.cameraY);
+    for (const b of currentBlocks) drawBlock(ctx, b.x, b.y, b.w, b.h, b.type, world.cameraX, world.cameraY);
+    for (const h of currentHazards) drawBlock(ctx, h.x, h.y, h.w, h.h, 'lava', world.cameraX, world.cameraY);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < mapWidth; x += 100) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, mapHeight);
-        ctx.stroke();
+    // Decorative arrows on tougher sections
+    drawHints(level);
+
+    for (const p of world.particles) p.draw(ctx, world.cameraX, world.cameraY);
+    player.draw(ctx, world.cameraX, world.cameraY, time);
+
+    // Finish glow overlay
+    const fin = currentBlocks.find(b => b.type === 'finish');
+    if (fin) {
+      const sx = fin.x - world.cameraX + fin.w / 2;
+      const sy = fin.y - world.cameraY + fin.h / 2;
+      const pulse = 0.5 + 0.5 * Math.sin(time * 6);
+      ctx.globalAlpha = 0.14 + pulse * 0.1;
+      ctx.fillStyle = '#7cff8a';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 40 + pulse * 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
-    for (let y = 0; y < mapHeight; y += 100) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(mapWidth, y);
-        ctx.stroke();
-    }
-
-    ctx.fillStyle = '#666';
-    ctx.fillRect(0, 400, mapWidth, 80);
-    ctx.fillRect(500, 0, 80, mapHeight);
-    ctx.fillRect(0, 900, mapWidth, 80);
-    ctx.fillRect(1100, 0, 80, mapHeight);
-
-    buildings.forEach(b => {
-        ctx.fillStyle = b.type === 'donerci' ? '#D2691E' :
-            b.type === 'mcdonalds' ? '#FFD700' :
-            b.type === 'shop' ? '#8B4513' :
-            b.type === 'park' ? '#228B22' : '#808080';
-        ctx.fillRect(b.x, b.y, b.w, b.h);
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(b.x, b.y, b.w, b.h);
-
-        ctx.font = '30px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(b.emoji, b.x + b.w / 2, b.y + b.h / 2 + 10);
-
-        ctx.font = 'bold 12px Arial';
-        ctx.fillStyle = 'white';
-        ctx.fillText(b.name, b.x + b.w / 2, b.y - 5);
-    });
-
-    destructibles.forEach(obj => {
-        const ratio = obj.hp / obj.maxHp;
-        ctx.fillStyle = ratio > 0.66 ? '#a56a3f' : ratio > 0.33 ? '#7a4a28' : '#4d2b16';
-        ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
-        ctx.strokeStyle = '#2c1a0f';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
-        ctx.font = '11px Arial';
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.fillText(obj.name, obj.x + obj.w / 2, obj.y - 4);
-    });
-
-    npcs.forEach(npc => {
-        ctx.globalAlpha = npc.stunned > 0 ? 0.5 : 1;
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = npc.color || 'white';
-        ctx.fillText(npc.emoji, npc.x, npc.y);
-
-        ctx.font = '10px Arial';
-        ctx.fillStyle = 'white';
-        ctx.fillText(npc.name, npc.x, npc.y - 20);
-
-        if (npc.speechTime > 0 && npc.speech) {
-            const text = npc.speech;
-            ctx.font = '11px Arial';
-            const width = Math.min(180, ctx.measureText(text).width + 16);
-            const boxX = npc.x - width / 2;
-            const boxY = npc.y - 64;
-            ctx.fillStyle = 'rgba(0,0,0,0.82)';
-            roundRect(ctx, boxX, boxY, width, 22, 8, true, false);
-            ctx.fillStyle = 'white';
-            ctx.fillText(text, npc.x, npc.y - 48);
-        }
-        ctx.globalAlpha = 1;
-    });
-
-    thieves.forEach(thief => {
-        ctx.font = '28px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'white';
-        ctx.fillText(thief.emoji, thief.x, thief.y);
-        if (thief.stealing) {
-            ctx.font = '12px Arial';
-            ctx.fillStyle = 'red';
-            ctx.fillText("ÇALDI!", thief.x, thief.y - 25);
-        }
-    });
-
-    police.forEach(p => {
-        ctx.font = '28px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'white';
-        ctx.fillText(p.emoji, p.x, p.y);
-        if (p.chasing) {
-            ctx.font = '12px Arial';
-            ctx.fillStyle = 'red';
-            ctx.fillText("YAKALIYOR!", p.x, p.y - 25);
-        }
-    });
-
-    if (player) {
-        const char = CHARACTERS[currentChar];
-        const size = char.size || 1;
-        ctx.save();
-        ctx.translate(player.x, player.y + (player.jumpY || 0));
-
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(0, 15, 15 * size, 5 * size, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.font = `${30 * size}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.globalAlpha = (currentChar === 'asya' && Date.now() < invisibleUntil) ? 0.35 : 1;
-        ctx.fillStyle = char.color || 'white';
-        ctx.fillText(char.emoji, 0, 10);
-
-        ctx.font = 'bold 12px Arial';
-        ctx.fillStyle = '#ffd700';
-        ctx.fillText(char.name, 0, -25);
-        ctx.globalAlpha = 1;
-
-        if (player.crouching) {
-            ctx.font = '10px Arial';
-            ctx.fillStyle = 'yellow';
-            ctx.fillText("EĞİLİYOR", 0, -40);
-        }
-
-        if (player.stunned > 0) {
-            ctx.font = '10px Arial';
-            ctx.fillStyle = '#ff8080';
-            ctx.fillText("SERSEMLEDİ", 0, -52);
-        }
-
-        ctx.restore();
-    }
-
-    particles.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-    });
 
     ctx.restore();
-}
 
-function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-    if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
-    ctx.beginPath();
-    ctx.moveTo(x + r.tl, y);
-    ctx.lineTo(x + w - r.tr, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
-    ctx.lineTo(x + w, y + h - r.br);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
-    ctx.lineTo(x + r.bl, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
-    ctx.lineTo(x, y + r.tl);
-    ctx.quadraticCurveTo(x, y, x + r.tl, y);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
-}
+    requestAnimationFrame(loop);
+  }
 
-function renderMinimap() {
-    minimapCtx.clearRect(0, 0, 120, 120);
-    minimapCtx.fillStyle = 'rgba(0,0,0,0.5)';
-    minimapCtx.fillRect(0, 0, 120, 120);
-
-    const scaleX = 120 / mapWidth;
-    const scaleY = 120 / mapHeight;
-
-    buildings.forEach(b => {
-        minimapCtx.fillStyle = '#666';
-        minimapCtx.fillRect(b.x * scaleX, b.y * scaleY, Math.max(2, b.w * scaleX), Math.max(2, b.h * scaleY));
-    });
-
-    destructibles.forEach(o => {
-        minimapCtx.fillStyle = '#b07a4f';
-        minimapCtx.fillRect(o.x * scaleX, o.y * scaleY, Math.max(2, o.w * scaleX), Math.max(2, o.h * scaleY));
-    });
-
-    if (player) {
-        minimapCtx.fillStyle = '#ffd700';
-        minimapCtx.fillRect(player.x * scaleX - 2, player.y * scaleY - 2, 4, 4);
+  function drawHints(level) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = 'bold 14px sans-serif';
+    const labels = [
+      { x: level.spawn.x + 150, y: 430, t: '→' },
+      { x: (level.checkpoint?.x || 0) + 90, y: (level.checkpoint?.y || 0) + 120, t: 'CP' }
+    ];
+    for (const l of labels) {
+      const sx = l.x - world.cameraX;
+      const sy = l.y - world.cameraY;
+      if (sx > -40 && sx < window.innerWidth + 40) ctx.fillText(l.t, sx, sy);
     }
+    ctx.restore();
+  }
 
-    minimapCtx.fillStyle = 'blue';
-    npcs.forEach(npc => minimapCtx.fillRect(npc.x * scaleX, npc.y * scaleY, 2, 2));
+  // Better ground/platform collision helpers using same objects as rects.
+  function resolveCollisions(playerObj, axis) {
+    const all = [];
+    for (const b of currentBlocks) all.push({ ...b, kind: 'block' });
+    for (const h of currentHazards) all.push({ ...h, kind: 'hazard' });
+    for (const m of currentPlatforms) all.push({ x: m.x, y: m.y, w: m.w, h: m.h, type: 'solid', kind: 'platform', ref: m });
 
-    minimapCtx.fillStyle = 'red';
-    thieves.forEach(t => minimapCtx.fillRect(t.x * scaleX, t.y * scaleY, 2, 2));
-}
+    for (const b of all) {
+      if (!rectsOverlap(playerObj, b)) continue;
 
-// ==================== ETKİLEŞİM ====================
-function doAction() {
-    if (gameState !== 'playing' || !player) return;
+      if (b.kind === 'hazard' || b.type === 'lava') {
+        spawnBurst(playerObj.x + playerObj.w / 2, playerObj.y + playerObj.h / 2, '#ffd166', 14);
+        playerObj.respawn();
+        return;
+      }
 
-    const nearestBuilding = getNearestEntity(buildings.map(b => ({
-        ...b,
-        x: b.x + b.w / 2,
-        y: b.y + b.h / 2,
-        _raw: b
-    })), player.x, player.y, 100);
-
-    if (nearestBuilding) {
-        const b = nearestBuilding._raw;
-        if (b.type === 'shop') {
-            showShop();
-            return;
+      if (axis === 'x') {
+        if (playerObj.vx > 0) playerObj.x = b.x - playerObj.w;
+        else if (playerObj.vx < 0) playerObj.x = b.x + b.w;
+        playerObj.vx = 0;
+      } else {
+        if (playerObj.vy > 0) {
+          playerObj.y = b.y - playerObj.h;
+          playerObj.vy = 0;
+          playerObj.grounded = true;
+          playerObj.doubleJumpUsed = false;
+          playerObj.groundObj = b.kind === 'platform' ? { kind: 'platform', vx: b.ref.vx, vy: b.ref.vy } : null;
+          if (b.type === 'checkpoint') {
+            levels[world.currentLevel].checkpoint = { x: b.x + 8, y: b.y - 80 };
+            world.checkpoints += 1;
+            spawnBurst(b.x + b.w / 2, b.y, '#ffd166', 12);
+            showMessage('Checkpoint!', 'Burası güvenli nokta.', 0.85);
+          }
+          if (b.type === 'finish') {
+            spawnBurst(b.x + b.w / 2, b.y, '#7cff8a', 18);
+            goNextLevel();
+          }
+        } else if (playerObj.vy < 0) {
+          playerObj.y = b.y + b.h;
+          playerObj.vy = 0;
         }
-        if (JOBS[b.type]) {
-            startJob(b.type);
-            return;
-        }
+      }
     }
+  }
 
-    const npc = getNearestEntity(npcs, player.x, player.y, 70);
-    if (npc) {
-        npc.speech = pickNpcDialogue(npc);
-        npc.speechTime = 2.4;
-        npc.speechCooldown = 4;
-        if (currentChar === 'asya') {
-            showMessage("NPC: Anneni mi daha çok seviyorsun taşı mı? Asya: Tabii ki taş! 🪨");
-        } else {
-            showMessage(`${npc.name}: ${npc.dialogue}`);
-        }
-    }
-}
-
-function startJob(jobType) {
-    const job = JOBS[jobType];
-    if (!job) return;
-
-    currentJob = jobType;
-    gameState = 'job';
-
-    const menu = document.getElementById('jobMenu');
-    const title = document.getElementById('jobTitle');
-    const content = document.getElementById('jobContent');
-
-    menu.style.display = 'flex';
-    title.textContent = `${job.emoji} ${job.name}`;
-
-    let html = `<div style="color:white; text-align:center; margin:20px;">`;
-    html += `<p>${job.description}</p>`;
-
-    if (job.products.length > 0) {
-        html += `<h3 style="margin-top:12px;">Ürünler</h3>`;
-        job.products.forEach(p => {
-            html += `<p>${p.emoji} ${p.name}: ${p.price} altın</p>`;
-        });
-    }
-
-    html += `<br>`;
-    html += `<button class="menu-btn" onclick="doWork('${jobType}')">💼 Çalışmaya Başla</button>`;
-    html += `</div>`;
-
-    content.innerHTML = html;
-}
-
-function doWork(jobType) {
-    const job = JOBS[jobType];
-    if (!job) return;
-
-    if (jobType === 'dilencilik') {
-        const rand = Math.random();
-        if (rand < 0.3) {
-            addGold(1);
-            showMessage("🙏 Birisi sana 1 altın verdi!");
-        } else if (rand < 0.5) {
-            showMessage("🤢 NPC: İyy bu nasıl insan! (Gitti)");
-        } else if (rand < 0.7 && gold >= 5) {
-            spendGold(5);
-            showMessage("🦹 Hırsız gelip 5 altınını çaldı!");
-        } else {
-            showMessage("Kimse sana para vermedi...");
-        }
-    } else {
-        const earnings = job.income + Math.floor(Math.random() * 2);
-        addGold(earnings);
-        showMessage(`💰 ${job.name}'de çalıştın! ${earnings} altın kazandın!`);
-    }
-
-    updateUI();
-    saveProfile();
-}
-
-function closeJobMenu() {
-    document.getElementById('jobMenu').style.display = 'none';
-    gameState = 'playing';
-}
-
-// ==================== MENÜLER ====================
-function showMainMenu() {
-    gameState = 'menu';
-    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
-    document.getElementById('mainMenu').style.display = 'flex';
-}
-
-function showCharSelect() {
-    if (!profileLoaded) return;
-    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
-    document.getElementById('charSelect').style.display = 'flex';
-
-    const grid = document.getElementById('charGrid');
-    grid.innerHTML = '';
-
-    const abilityName = {
-        yere_duser: 'Düşüş', ucucu: 'Minik Kaçış', kemer: 'Kemer Saldırısı', yumruk: 'Yumruk', kas_kaldir: 'Felç Bakışı', horlama: 'Horlama', gegirme: 'Geğirme', yogurt: 'Yoğurt Atışı', osuruk: 'Osuruk Saldırısı'
-    };
-
-    const order = ['poyraz', 'asya', 'tuna', 'aydin', 'therock', 'irfan', 'kelodayi', 'yogurtnine', 'mustafa'];
-
-    order.forEach(key => {
-        const char = CHARACTERS[key];
-        const isUnlocked = unlockedChars.includes(key);
-        const card = document.createElement('div');
-        card.className = 'char-card';
-        const specialLabel = abilityName[char.special] || char.special;
-        card.innerHTML = `
-            <div style="font-size:44px; line-height:1;">${char.emoji}</div>
-            <div class="char-name">${char.name}</div>
-            <div class="char-price">${isUnlocked ? '✅ Sahipsin' : char.price + ' altın'}</div>
-            <div class="char-desc">${char.desc}</div>
-            <div style="color:#8cff8c; font-size:11px; margin-top:5px;">Yetenek: ${specialLabel}</div>
-            <div style="color:#aaa; font-size:11px; margin-top:4px;">Hız: ${char.speed} km/s</div>
-        `;
-
-        if (isUnlocked) {
-            card.onclick = () => selectCharacter(key);
-            card.style.borderColor = '#ffd700';
-        } else {
-            card.style.opacity = '0.65';
-            card.onclick = () => {
-                if (spendGold(char.price)) {
-                    unlockedChars.push(key);
-                    showMessage(`${char.name} satın alındı!`);
-                    scheduleSave();
-                    showCharSelect();
-                } else {
-                    showMessage("Yeterli altının yok!");
-                }
-            };
-        }
-
-        grid.appendChild(card);
-    });
-}
-
-function selectCharacter(charKey) {
-    currentChar = charKey;
-    const char = CHARACTERS[charKey];
-
-    player = {
-        x: mapWidth / 2,
-        y: mapHeight / 2,
-        jumping: false,
-        jumpY: 0,
-        jumpVel: 0,
-        crouching: false,
-        stunned: 0
-    };
-
-    document.getElementById('charSelect').style.display = 'none';
-    gameState = 'playing';
-
-    updateCharInfo();
-    showMessage(`${char.name} seçildi! Şehre hoş geldin!`);
-    saveProfile();
-}
-
-
-function showShop() {
-    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
-    document.getElementById('shopMenu').style.display = 'flex';
-
-    const grid = document.getElementById('shopGrid');
-    grid.innerHTML = '';
-
-    Object.entries(CHARACTERS).forEach(([key, char]) => {
-        if (unlockedChars.includes(key)) return;
-
-        const item = document.createElement('div');
-        item.className = 'shop-item';
-        item.innerHTML = `
-            <div style="font-size:50px;">${char.emoji}</div>
-            <h3>${char.name}</h3>
-            <p>${char.desc}</p>
-            <p style="color:#ffd700; font-size:18px;">${char.price} altın</p>
-        `;
-
-        item.onclick = () => {
-            if (spendGold(char.price)) {
-                unlockedChars.push(key);
-                showMessage(`${char.name} satın alındı!`);
-                scheduleSave();
-                showShop();
-            } else {
-                showMessage("Yeterli altının yok!");
-            }
-        };
-
-        grid.appendChild(item);
-    });
-
-    if (grid.innerHTML === '') {
-        grid.innerHTML = '<div style="color:white; text-align:center;">Tüm karakterleri satın aldın!</div>';
-    }
-}
-
-function showHowToPlay() {
-    document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
-    document.getElementById('howToPlay').style.display = 'flex';
-}
-
-// ==================== KAYIT / UI ====================
-function addGold(amount) {
-    gold = Math.max(0, Math.floor(gold + amount));
-    updateUI();
-    scheduleSave();
-}
-
-function spendGold(amount) {
-    if (gold < amount) return false;
-    gold = Math.max(0, Math.floor(gold - amount));
-    updateUI();
-    scheduleSave();
-    return true;
-}
-
-function scheduleSave() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => saveProfile(false), 1200);
-    setSaveStatus('Kaydedilecek...');
-}
-
-async function saveProfile(force = false) {
-    if (!profileLoaded || !currentUsername) return;
-
-    const profile = {
-        username: currentUsername,
-        gold,
-        unlockedChars,
-        currentChar,
-        updatedAt: Date.now()
-    };
-
-    localStorage.setItem(getLocalProfileKey(currentUsername), JSON.stringify(profile));
-
-    if (firebaseReady) {
-        try {
-            const ref = doc(db, SAVE_DOCS, currentUsername);
-            await setDoc(ref, { ...profile, updatedAt: serverTimestamp() }, { merge: true });
-            if (force) setSaveStatus('Kaydedildi');
-            else setSaveStatus('Firebase + yerel kayıt güncellendi');
-            return;
-        } catch (err) {
-            console.warn('Firebase kaydı başarısız, yerel kayıt kullanıldı.', err);
-        }
-    }
-
-    if (force) setSaveStatus('Yerel kaydedildi');
-    else setSaveStatus('Yerel kayıt güncellendi');
-}
-
-function setSaveStatus(text) {
-    const el = document.getElementById('saveStatus');
-    el.textContent = text;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => {
-        el.textContent = currentUsername ? `● ${currentUsername}` : '● Giriş bekleniyor';
-    }, 1800);
-}
-
-function updateUI() {
-    document.getElementById('goldDisplay').textContent = `💰 Altın: ${gold}`;
-}
-
-function updateCharInfo() {
-    const char = CHARACTERS[currentChar];
-    const abilityName = { yere_duser: 'Düşüş', ucucu: 'Görünmezlik', kemer: 'Kemer Saldırısı', yumruk: 'Yumruk', kas_kaldir: 'Felç Bakışı', horlama: 'Horlama', gegirme: 'Geğirme', yogurt: 'Yoğurt', osuruk: 'Osuruk' };
-    document.getElementById('charInfo').innerHTML = `
-        <b>${char.emoji} ${char.name}</b><br>
-        Kullanıcı: ${currentUsername || '-'}<br>
-        Hız: ${char.speed} km<br>
-        Yetenek: ${abilityName[char.special] || char.special}
-    `;
-}
-
-
-// ==================== MESAJ ====================
-function showMessage(text) {
-    const box = document.getElementById('messageBox');
-    box.textContent = text;
-    box.style.display = 'block';
-    clearTimeout(box._timer);
-    box._timer = setTimeout(() => {
-        box.style.display = 'none';
-    }, 2500);
-}
-
-// ==================== DIŞA AÇMA ====================
-window.showMainMenu = showMainMenu;
-window.showCharSelect = showCharSelect;
-window.showShop = showShop;
-window.showHowToPlay = showHowToPlay;
-window.closeJobMenu = closeJobMenu;
-window.doWork = doWork;
-window.doAction = doAction;
-window.useSpecialAbility = useSpecialAbility;
-
-window.addEventListener('beforeunload', () => {
-    if (currentUsername) {
-        const profile = {
-            username: currentUsername,
-            gold,
-            unlockedChars,
-            currentChar,
-            updatedAt: Date.now()
-        };
-        localStorage.setItem(getLocalProfileKey(currentUsername), JSON.stringify(profile));
-    }
-});
-</script>
+  // Initialize
+  loadLevel(0);
+  requestAnimationFrame(loop);
+  </script>
 </body>
 </html>
