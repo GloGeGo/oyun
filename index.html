@@ -1,296 +1,460 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Cips Bombası</title>
-  <style>
-    :root{
-      --bg1:#334155;
-      --bg2:#0f172a;
-      --bg3:#020617;
-      --panel:rgba(17,24,39,.86);
-      --text:#f8fafc;
-      --muted:#cbd5e1;
-      --shadow:0 12px 26px rgba(0,0,0,.28);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0}
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--text);
-      background:radial-gradient(circle at top,var(--bg1) 0%,var(--bg2) 58%,var(--bg3) 100%);
-      overflow-x:hidden;
-    }
-    .app{min-height:100%;display:flex;align-items:center;justify-content:center;padding:12px}
-    .screen{width:min(980px,100%);display:none}
-    .screen.active{display:block}
-    .card{
-      background:var(--panel);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:24px;
-      box-shadow:0 24px 70px rgba(0,0,0,.35);
-      backdrop-filter:blur(10px);
-      overflow:hidden;
-    }
-    .hero{padding:18px 16px 10px;text-align:center}
-    .title{margin:0;font-size:clamp(28px,5.8vw,54px);font-weight:900;letter-spacing:.4px}
-    .subtitle{margin:8px auto 0;max-width:58ch;color:var(--muted);line-height:1.5;font-size:clamp(13px,2.5vw,17px)}
-    .menu{display:grid;gap:14px;padding:14px;grid-template-columns:1fr}
-    @media (min-width:760px){.menu{grid-template-columns:1.1fr .9fr}}
-    .section{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:12px}
-    .section h2{margin:0 0 10px;font-size:18px}
-    .mode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .btn{appearance:none;border:0;border-radius:16px;padding:13px 12px;font-weight:800;cursor:pointer;box-shadow:0 12px 24px rgba(0,0,0,.2);transition:transform .14s ease, opacity .14s ease}
-    .btn:active{transform:scale(.98)}
-    .primary{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1f1300}
-    .ghost{background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.08);box-shadow:none}
-    .secondary{background:linear-gradient(135deg,#60a5fa,#3b82f6);color:white}
-    .small{padding:10px 12px;border-radius:12px;font-size:14px}
-    .note{color:var(--muted);font-size:13px;line-height:1.45}
-    .preview{margin-top:10px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-width:220px}
-    .dot{aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0b6 0,#f8d98d 28%,#e6bb61 62%,#b9842b 100%);box-shadow:var(--shadow)}
-    .game{display:grid;gap:14px;padding:12px}
-    .hud{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px}
-    .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);font-size:13px}
-    .status{font-size:15px;line-height:1.4}
-    .board-wrap{display:grid;place-items:center}
-    .board{width:min(100%,680px);display:grid;gap:clamp(6px,1.3vw,10px);padding:clamp(8px,1.8vw,14px);border-radius:28px;background:linear-gradient(rgba(255,255,255,.04), rgba(255,255,255,.04)), linear-gradient(180deg,#8b5a2b,#6b4320 50%,#5a3718 100%);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 44px rgba(0,0,0,.35);margin:0 auto}
-    .grid-9{grid-template-columns:repeat(3,1fr);aspect-ratio:1/1;max-width:420px}
-    .grid-18{grid-template-columns:repeat(6,1fr);aspect-ratio:6/3.5;max-width:680px}
-    @media (max-width:680px){.grid-18{grid-template-columns:repeat(3,1fr);aspect-ratio:auto}}
-    .chip{position:relative;width:100%;aspect-ratio:1;border:0;padding:0;border-radius:50%;cursor:pointer;box-shadow:var(--shadow);background:radial-gradient(circle at 35% 30%,#fff2ba 0,#f7d98a 28%,#ebc05f 62%,#c58d2d 100%);border:1px solid rgba(96,55,0,.12);overflow:hidden;min-width:0}
-    .chip::before{content:"";position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle at 22% 28%,rgba(255,255,255,.55) 0 4%,transparent 5%),radial-gradient(circle at 68% 22%,rgba(255,255,255,.4) 0 3%,transparent 4%),radial-gradient(circle at 34% 68%,rgba(140,90,20,.18) 0 7%,transparent 8%),radial-gradient(circle at 72% 66%,rgba(140,90,20,.2) 0 6%,transparent 7%),radial-gradient(circle at 56% 46%,rgba(255,255,255,.15) 0 8%,transparent 10%);opacity:.92}
-    .chip:active{transform:scale(.98)}
-    .chip.revealed{cursor:default}
-    .chip.safe.revealed{background:radial-gradient(circle at 35% 30%,#fef3c7 0,#f5d98a 28%,#d9b262 62%,#ab7d24 100%)}
-    .chip.bomb.revealed{background:linear-gradient(180deg,#111827,#7f1d1d 100%)}
-    .chip .emoji{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(15px,3.8vw,28px);opacity:0;transform:translateY(2px);transition:.15s}
-    .chip.revealed .emoji{opacity:1;transform:translateY(0)}
-    .chip .label{position:absolute;inset:auto 0 7%;text-align:center;font-size:clamp(8px,1.7vw,12px);font-weight:900;letter-spacing:.5px;color:rgba(16,24,40,.75);user-select:none}
-    .chip.bomb .label{color:#fff}
-    .footer-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
-    .win{color:#86efac}.lose{color:#fca5a5}.tiny{font-size:12px;color:var(--muted)}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BsGo - Mağaza & Envanter</title>
+    <style>
+        /* GENEL TASARIM */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1, h2, h3 { color: #4caf50; }
+        input, button { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: none; border-radius: 5px; box-sizing: border-box; }
+        input { background: #2d2d2d; color: white; border: 1px solid #444; }
+        button { background: #4caf50; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #45a049; }
+        .hidden { display: none !important; }
+        
+        /* KART TASARIMLARI */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 10px; }
+        .card { background: #2d2d2d; padding: 15px; border-radius: 8px; border: 1px solid #444; text-align: center; position: relative; }
+        .card h4 { margin: 0 0 10px 0; color: #fff; }
+        .card p { font-size: 14px; color: #bbb; margin-bottom: 10px; }
+        .price { color: #ffd700; font-weight: bold; margin-bottom: 10px; }
+        
+        /* İLERLEME ÇUBUĞU */
+        .progress-container { background: #444; border-radius: 5px; margin: 10px 0; height: 15px; width: 100%; overflow: hidden; position: relative; }
+        .progress-bar { height: 100%; background: #ffd700; width: 0%; transition: width 0.1s linear; }
+        .progress-text { margin-top: 5px; font-size: 12px; font-weight: bold; color: #ffd700; }
+
+        /* ÜST BİLGİ & ADMİN PANELİ */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #4caf50; }
+        .coin-display { font-size: 24px; font-weight: bold; color: #ffd700; }
+        .admin-panel { background: #3d2a2a; border: 1px solid #ff4444; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .admin-panel h2 { color: #ff4444; }
+        .admin-list-item { background: #222; border: 1px solid #555; padding: 10px; border-radius: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* UYARI MODALI */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #2d2d2d; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; width: 100%; border: 2px solid #4caf50; }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <div class="screen active" id="menuScreen">
-      <div class="card">
-        <div class="hero">
-          <h1 class="title">Cips Bombası</h1>
-          <p class="subtitle">Bombalı cipsi bulmadan önce karşı taraf seçerse kaybedersin. Cipsler artık küçük ve ekran içine sığacak şekilde ayarlı.</p>
+
+<div class="container">
+    <!-- GİRİŞ / KAYIT EKRANI -->
+    <div id="auth-section">
+        <h1>BsGo'ya Hoş Geldiniz</h1>
+        <div id="login-box">
+            <h3>Giriş Yap</h3>
+            <input type="text" id="log-username" placeholder="Kullanıcı Adı">
+            <input type="password" id="log-pass" placeholder="Şifre">
+            <button id="btn-login">Giriş Yap</button>
+            <p style="text-align: center; cursor: pointer; color: #4caf50;" id="go-to-register">Hesabın yok mu? Kayıt Ol</p>
         </div>
-        <div class="menu">
-          <div class="section">
-            <h2>Oyun Modu</h2>
-            <div class="mode-grid">
-              <button class="btn primary" onclick="startGame(9)">9’lu Cips</button>
-              <button class="btn primary" onclick="startGame(18)">18’li Cips</button>
-            </div>
-            <div style="height:12px"></div>
-            <h2>Yapay Zeka</h2>
-            <div class="mode-grid">
-              <button class="btn ghost" onclick="setAI('Gora')">Gora<br><span class="tiny">Kolay</span></button>
-              <button class="btn ghost" onclick="setAI('Pootlnand')">Pootlnand<br><span class="tiny">Orta</span></button>
-              <button class="btn ghost" onclick="setAI('Greenhed')">Greenhed<br><span class="tiny">Zor</span></button>
-              <button class="btn ghost" onclick="setAI('Extreme Bow')">Extreme Bow<br><span class="tiny">Aşırı zor</span></button>
-            </div>
-          </div>
-          <div class="section">
-            <h2>Önizleme</h2>
-            <div class="note">İstersen bunu daha da küçük yapabiliriz. Şu an mobilde sığacak seviyeye getirildi.</div>
-            <div class="preview" id="preview"></div>
-          </div>
+        <div id="register-box" class="hidden">
+            <h3>Kayıt Ol</h3>
+            <input type="text" id="reg-username" placeholder="Kullanıcı Adı">
+            <input type="password" id="reg-pass" placeholder="Şifre">
+            <button id="btn-register">Kayıt Ol</button>
+            <p style="text-align: center; cursor: pointer; color: #4caf50;" id="go-to-login">Zaten hesabın var mı? Giriş Yap</p>
         </div>
-      </div>
     </div>
 
-    <div class="screen" id="gameScreen">
-      <div class="card">
-        <div class="game">
-          <div class="hud">
+    <!-- ANA UYGULAMA EKRANI -->
+    <div id="app-section" class="hidden">
+        <div class="top-bar">
             <div>
-              <div class="badge">Mod: <strong id="modeText">9’lu</strong></div>
-              <div style="height:6px"></div>
-              <div class="badge">AI: <strong id="aiText">Gora</strong></div>
+                <span style="font-size: 18px;">Merhaba, <span id="user-name-display" style="font-weight: bold; color: #4caf50;"></span></span>
             </div>
-            <div class="status" id="statusText">Sıra sende. Bir cips seç.</div>
-            <div style="height:6px"></div>
-            <div class="badge">Skor: <strong id="scoreText">Ben 0 - 0 AI</strong></div>
-          </div>
-          <div class="board-wrap">
-            <div class="board" id="board"></div>
-          </div>
-          <div class="footer-actions">
-            <button class="btn small secondary" onclick="restartRound()">Yeniden Başlat</button>
-            <button class="btn small ghost" onclick="backToMenu()">Menüye Dön</button>
-          </div>
+            <div class="coin-display">🪙 Coin: <span id="user-coins">0</span></div>
+            <button id="btn-logout" style="width: auto; margin: 0; background: #ff4444;">Çıkış Yap</button>
         </div>
-      </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="promo-input" placeholder="Promosyon Kodunu Girin" style="margin: 0;">
+            <button id="btn-use-promo" style="width: 150px; margin: 0;">Kodu Kullan</button>
+        </div>
+
+        <h2>🛒 Mağaza</h2>
+        <div class="grid" id="store-grid"></div>
+
+        <h2 style="margin-top: 30px;">🎒 Envanterim</h2>
+        <div class="grid" id="inventory-grid"></div>
+
+        <!-- ADMİN PANELİ -->
+        <div id="admin-panel" class="admin-panel hidden">
+            <h2>🛠️ Admin Paneli</h2>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h3>Yeni Ürün Ekle</h3>
+                    <input type="text" id="prod-name" placeholder="Ürün Adı">
+                    <input type="number" id="prod-price" placeholder="Fiyat (Coin)">
+                    <input type="text" id="prod-desc" placeholder="Ürün Açıklaması">
+                    <input type="text" id="prod-alert" placeholder="Kullanılınca Çıkacak Uyarı Mesajı">
+                    <input type="number" id="prod-duration" placeholder="Kullanıldıktan Sonra Silinme Süresi (Saniye)">
+                    <button id="btn-add-product">Ürünü Ekle</button>
+                </div>
+                <div style="flex: 1; min-width: 250px;">
+                    <h3>Promosyon Kodu Ekle</h3>
+                    <input type="text" id="promo-code" placeholder="Kod (Örn: VIP2026)">
+                    <input type="number" id="promo-reward" placeholder="Verilecek Coin">
+                    <input type="number" id="promo-uses" placeholder="Kaç Kere Kullanılabilir?">
+                    <input type="number" id="promo-days" placeholder="Kaç Gün Geçerli?">
+                    <button id="btn-add-promo">Kodu Ekle</button>
+                </div>
+            </div>
+
+            <hr style="border: 1px solid #ff4444; margin: 30px 0 20px 0;">
+            
+            <!-- YENİ: Ürün Yönetim Listesi -->
+            <h3>Mevcut Ürünleri Yönet</h3>
+            <div id="admin-product-list"></div>
+        </div>
     </div>
-  </div>
+</div>
 
-<script>
-  const state = {
-    mode: 9,
-    ai: 'Gora',
-    bombIndex: -1,
-    chips: [],
-    gameOver: false,
-    playerTurn: true,
-    aiTimer: null,
-    aiScore: { 'Gora': 0.42, 'Pootlnand': 0.62, 'Greenhed': 0.8, 'Extreme Bow': 0.93 }
-  };
+<!-- Özel Uyarı Modalı -->
+<div id="alert-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h2 style="margin-top:0;">Sistem Mesajı</h2>
+        <p id="alert-text" style="font-size: 18px;"></p>
+        <button onclick="document.getElementById('alert-modal').classList.add('hidden')">Kapat</button>
+    </div>
+</div>
 
-  const preview = document.getElementById('preview');
-  const board = document.getElementById('board');
-  const menuScreen = document.getElementById('menuScreen');
-  const gameScreen = document.getElementById('gameScreen');
-  const statusText = document.getElementById('statusText');
-  const scoreText = document.getElementById('scoreText');
-  const modeText = document.getElementById('modeText');
-  const aiText = document.getElementById('aiText');
+<!-- YENİ: Ürün Düzenleme Modalı -->
+<div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="border-color: #ff9800;">
+        <h2 style="margin-top:0; color: #ff9800;">Ürünü Düzenle</h2>
+        <input type="hidden" id="edit-prod-id">
+        <input type="text" id="edit-prod-name" placeholder="Ürün Adı">
+        <input type="number" id="edit-prod-price" placeholder="Fiyat (Coin)">
+        <input type="text" id="edit-prod-desc" placeholder="Ürün Açıklaması">
+        <input type="text" id="edit-prod-alert" placeholder="Kullanılınca Çıkacak Uyarı Mesajı">
+        <input type="number" id="edit-prod-duration" placeholder="Silinme Süresi (Saniye)">
+        
+        <button id="btn-save-edit" style="background: #ff9800; color: black;">Güncelle</button>
+        <button onclick="document.getElementById('edit-modal').classList.add('hidden')" style="background: #444;">İptal Et</button>
+    </div>
+</div>
 
-  function renderPreview(){
-    preview.innerHTML = '';
-    for(let i=0;i<6;i++){
-      const d=document.createElement('div');
-      d.className='dot';
-      preview.appendChild(d);
-    }
-  }
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    // YENİ EKLENEN: deleteDoc (Silme komutu için)
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-  function updateScore(){
-    if (scoreText) scoreText.textContent = `Ben ${state.playerHits} - ${state.aiHits} AI`;
-  }
+    const firebaseConfig = {
+      apiKey: "AIzaSyBS6ZNsL6uTu7t_wcY7hyQQlDj2y5tjlVs",
+      authDomain: "bsgo-5bce5.firebaseapp.com",
+      projectId: "bsgo-5bce5",
+      storageBucket: "bsgo-5bce5.firebasestorage.app",
+      messagingSenderId: "156625686102",
+      appId: "1:156625686102:web:79d38399ad8a9a8ed7b5f7",
+      measurementId: "G-83K0112RLL"
+    };
 
-  function setAI(name){
-    state.ai = name;
-    aiText.textContent = name;
-    statusText.textContent = `Yapay zeka seçildi: ${name}`;
-  }
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  function startGame(mode){
-    state.mode = mode;
-    modeText.textContent = mode === 9 ? '9’lu' : '18’li';
-    menuScreen.classList.remove('active');
-    gameScreen.classList.add('active');
-    initRound();
-  }
+    setPersistence(auth, browserSessionPersistence).catch(console.error);
 
-  function backToMenu(){
-    clearTimeout(state.aiTimer);
-    state.aiTimer = null;
-    gameScreen.classList.remove('active');
-    menuScreen.classList.add('active');
-  }
+    let currentUserDoc = null;
+    let progressInterval = null; 
 
-  function restartRound(){
-    initRound();
-  }
+    document.getElementById('go-to-register').onclick = () => { document.getElementById('login-box').classList.add('hidden'); document.getElementById('register-box').classList.remove('hidden'); };
+    document.getElementById('go-to-login').onclick = () => { document.getElementById('register-box').classList.add('hidden'); document.getElementById('login-box').classList.remove('hidden'); };
 
-  function initRound(){
-    clearTimeout(state.aiTimer);
-    state.aiTimer = null;
-    state.gameOver = false;
-    state.playerTurn = true;
-    state.chips = Array.from({length: state.mode}, (_, i) => ({ idx:i, revealed:false, bomb:false }));
-    state.bombIndex = Math.floor(Math.random() * state.mode);
-    state.chips[state.bombIndex].bomb = true;
-    renderBoard();
-    updateScore();
-    statusText.textContent = 'Sıra sende. Sadece 1 cips seçebilirsin.';
-  }
+    // --- KAYIT & GİRİŞ ---
+    document.getElementById('btn-register').onclick = async () => {
+        const username = document.getElementById('reg-username').value.trim();
+        const pass = document.getElementById('reg-pass').value;
+        if (!username || !pass) return alert("Lütfen alanları doldurun!");
+        const fakeEmail = username.toLowerCase().replace(/\s+/g, '') + "@bsgo.com"; 
+        try {
+            const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
+            await setDoc(doc(db, "users", userCred.user.uid), { username: username, coins: 100, inventory: [], usedPromos: [] });
+            alert("Kayıt başarılı! Giriş yapılıyor...");
+        } catch (e) { alert("Hata: " + e.message); }
+    };
 
-  function boardClass(){
-    return state.mode === 9 ? 'grid-9' : 'grid-18';
-  }
+    document.getElementById('btn-login').onclick = async () => {
+        const username = document.getElementById('log-username').value.trim();
+        const pass = document.getElementById('log-pass').value;
+        if (!username || !pass) return alert("Lütfen alanları doldurun!");
+        const fakeEmail = username.toLowerCase().replace(/\s+/g, '') + "@bsgo.com";
+        try { await signInWithEmailAndPassword(auth, fakeEmail, pass); } catch (e) { alert("Giriş başarısız."); }
+    };
 
-  function renderBoard(){
-    board.className = `board ${boardClass()}`;
-    board.innerHTML = '';
-    state.chips.forEach((chip, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'chip' + (chip.revealed ? ' revealed ' + (chip.bomb ? 'bomb' : 'safe') : '');
-      btn.disabled = state.gameOver || chip.revealed || !state.playerTurn;
-      btn.setAttribute('aria-label', `Cips ${idx + 1}`);
-      btn.innerHTML = `<span class="emoji">${chip.revealed ? (chip.bomb ? '💣' : '✅') : '🍟'}</span><span class="label">${idx + 1}</span>`;
-      btn.addEventListener('click', () => playerPick(idx));
-      board.appendChild(btn);
+    document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+    // --- UYGULAMA DURUMU ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('app-section').classList.remove('hidden');
+            
+            const userDocRef = doc(db, "users", user.uid);
+            
+            const docCheck = await getDoc(userDocRef);
+            if (!docCheck.exists()) {
+                const recoveredName = user.email.split('@')[0];
+                await setDoc(userDocRef, { username: recoveredName.charAt(0).toUpperCase() + recoveredName.slice(1), coins: 100, inventory: [], usedPromos: [] });
+            }
+
+            onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    currentUserDoc = docSnap.data();
+                    const dbUsername = currentUserDoc.username || "Bilinmeyen";
+                    document.getElementById('user-name-display').innerText = dbUsername;
+                    document.getElementById('user-coins').innerText = currentUserDoc.coins || 0;
+                    
+                    const safeName = dbUsername.toLowerCase();
+                    if (safeName.includes("alper") || safeName.includes("alper9119") || user.email.toLowerCase().includes("alper")) {
+                        document.getElementById('admin-panel').classList.remove('hidden');
+                    } else { document.getElementById('admin-panel').classList.add('hidden'); }
+                    
+                    renderInventory();
+                    loadStore(); // Yetkiler yenilenince listeyi de yenile
+                }
+            });
+        } else {
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('app-section').classList.add('hidden');
+        }
     });
-  }
 
-  function reveal(idx, by){
-    const chip = state.chips[idx];
-    if(!chip || chip.revealed || state.gameOver) return false;
-    chip.revealed = true;
-    if(chip.bomb){
-      state.gameOver = true;
-      statusText.innerHTML = by === 'player'
-        ? `<span class="lose">Bomba sende çıktı. Kaybettin.</span>`
-        : `<span class="win">${state.ai} bombaya değdi. Sen kazandın.</span>`;
-      renderBoard();
-      updateScore();
-      return true;
+    // --- MAĞAZA VE ADMİN YÖNETİMİ ---
+    function loadStore() {
+        if(!currentUserDoc) return;
+
+        onSnapshot(collection(db, "products"), (snapshot) => {
+            const storeGrid = document.getElementById('store-grid');
+            const adminList = document.getElementById('admin-product-list');
+            
+            storeGrid.innerHTML = "";
+            adminList.innerHTML = "";
+
+            const safeName = currentUserDoc.username.toLowerCase();
+            const isAdmin = safeName.includes("alper") || safeName.includes("alper9119");
+
+            snapshot.forEach((productDoc) => {
+                const prod = productDoc.data();
+                
+                // 1. Kullanıcı Mağazası Oluşturma
+                const card = document.createElement('div');
+                card.className = "card";
+                card.innerHTML = `<h4>${prod.name}</h4><p>${prod.desc}</p><div class="price">🪙 ${prod.price} Coin</div><button id="buy-${productDoc.id}">Satın Al</button>`;
+                storeGrid.appendChild(card);
+
+                // YENİ: Satın Alınca Ürünü Mağazadan Tamamen Silme
+                document.getElementById(`buy-${productDoc.id}`).onclick = async () => {
+                    if (currentUserDoc.coins >= prod.price) {
+                        try {
+                            // Envantere Ekle ve Coini Düş
+                            await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                                coins: currentUserDoc.coins - prod.price,
+                                inventory: [...currentUserDoc.inventory, prod]
+                            });
+                            // Ürünü Mağazadan Sil
+                            await deleteDoc(doc(db, "products", productDoc.id));
+                            alert("Satın alma başarılı! Ürün mağazadan silindi ve envantere eklendi.");
+                        } catch(e) { console.error("Hata:", e); }
+                    } else { alert("Yetersiz Coin!"); }
+                };
+
+                // 2. Admin Yönetim Listesi Oluşturma
+                if (isAdmin) {
+                    const listItem = document.createElement('div');
+                    listItem.className = "admin-list-item";
+                    listItem.innerHTML = `
+                        <div><strong style="color:#4caf50;">${prod.name}</strong> - Fiyat: ${prod.price} Coin</div>
+                        <div style="display:flex; gap:10px;">
+                            <button id="edit-${productDoc.id}" style="margin:0; width:auto; padding:8px; background:#ff9800; color:black;">Düzenle</button>
+                            <button id="del-${productDoc.id}" style="margin:0; width:auto; padding:8px; background:#ff4444;">Sil</button>
+                        </div>
+                    `;
+                    adminList.appendChild(listItem);
+
+                    // YENİ: Admin Silme Butonu İşlevi
+                    document.getElementById(`del-${productDoc.id}`).onclick = async () => {
+                        if(confirm(`"${prod.name}" ürününü tamamen silmek istediğine emin misin?`)){
+                            await deleteDoc(doc(db, "products", productDoc.id));
+                        }
+                    };
+
+                    // YENİ: Admin Düzenleme Butonu İşlevi
+                    document.getElementById(`edit-${productDoc.id}`).onclick = () => {
+                        document.getElementById('edit-prod-id').value = productDoc.id;
+                        document.getElementById('edit-prod-name').value = prod.name;
+                        document.getElementById('edit-prod-price').value = prod.price;
+                        document.getElementById('edit-prod-desc').value = prod.desc;
+                        document.getElementById('edit-prod-alert').value = prod.alertMsg;
+                        document.getElementById('edit-prod-duration').value = prod.duration || 5;
+                        
+                        document.getElementById('edit-modal').classList.remove('hidden');
+                    };
+                }
+            });
+
+            if(adminList.innerHTML === "") {
+                adminList.innerHTML = "<p style='color:#bbb;'>Şu an mağazada hiç ürün yok.</p>";
+            }
+            if(storeGrid.innerHTML === "") {
+                storeGrid.innerHTML = "<p>Mağazada ürün bulunmamaktadır.</p>";
+            }
+        });
     }
-    if (by === 'player') state.playerHits += 1;
-    if (by === 'ai') state.aiHits += 1;
-    updateScore();
-    return false;
-  }
 
-  function playerPick(idx){
-    if(state.gameOver || !state.playerTurn || state.aiTimer) return;
+    // YENİ: Admin Düzenleme Kaydet Butonu İşlevi
+    document.getElementById('btn-save-edit').onclick = async () => {
+        const id = document.getElementById('edit-prod-id').value;
+        const name = document.getElementById('edit-prod-name').value;
+        const price = parseInt(document.getElementById('edit-prod-price').value);
+        const desc = document.getElementById('edit-prod-desc').value;
+        const alertMsg = document.getElementById('edit-prod-alert').value;
+        const duration = parseInt(document.getElementById('edit-prod-duration').value) || 5;
 
-    clearTimeout(state.aiTimer);
-    state.aiTimer = null;
+        if (name && price && desc && alertMsg) {
+            await updateDoc(doc(db, "products", id), { name, price, desc, alertMsg, duration });
+            document.getElementById('edit-modal').classList.add('hidden');
+            alert("Ürün başarıyla güncellendi!");
+        } else {
+            alert("Lütfen tüm alanları doldurun.");
+        }
+    };
 
-    const hit = reveal(idx, 'player');
-    if(hit){
-      renderBoard();
-      return;
+    // --- ENVANTER VE CANLI İŞLENİYOR SÜRECİ ---
+    let isDeletingItem = false; 
+
+    function renderInventory() {
+        const invGrid = document.getElementById('inventory-grid');
+        invGrid.innerHTML = "";
+        if (progressInterval) clearInterval(progressInterval);
+
+        if (!currentUserDoc.inventory || currentUserDoc.inventory.length === 0) { 
+            invGrid.innerHTML = "<p>Envanterin boş.</p>"; return; 
+        }
+
+        let hasProcessingItem = false;
+
+        currentUserDoc.inventory.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = "card";
+
+            if (item.processStartTime) {
+                hasProcessingItem = true;
+                card.innerHTML = `
+                    <h4>${item.name}</h4>
+                    <p style="font-size: 12px; color: #aaa;">İşleniyor...</p>
+                    <div class="progress-container"><div class="progress-bar" id="prog-bar-${index}"></div></div>
+                    <div class="progress-text" id="prog-text-${index}">%0</div>
+                `;
+            } else {
+                card.innerHTML = `<h4>${item.name}</h4><p>${item.desc}</p><button id="use-${index}">Kullan</button>`;
+            }
+            invGrid.appendChild(card);
+
+            if (!item.processStartTime) {
+                document.getElementById(`use-${index}`).onclick = async () => {
+                    document.getElementById('alert-text').innerText = item.alertMsg;
+                    document.getElementById('alert-modal').classList.remove('hidden');
+
+                    let updatedInventory = [...currentUserDoc.inventory];
+                    updatedInventory[index].processStartTime = Date.now();
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), { inventory: updatedInventory });
+                };
+            }
+        });
+
+        if (hasProcessingItem) progressInterval = setInterval(updateProgressBars, 100);
     }
 
-    state.playerTurn = false;
-    renderBoard();
-    statusText.textContent = `${state.ai} oynuyor...`;
+    async function updateProgressBars() {
+        if (isDeletingItem) return;
 
-    state.aiTimer = setTimeout(() => {
-      state.aiTimer = null;
-      aiPick();
-    }, 800);
-  }
+        let itemsToRemove = [];
+        let currentInv = [...currentUserDoc.inventory];
 
-  function aiPick(){
-    if(state.gameOver) return;
-    const unopened = state.chips.filter(c => !c.revealed).map(c => c.idx);
-    if(!unopened.length) return;
+        currentInv.forEach((item, index) => {
+            if (item.processStartTime) {
+                const elapsed = Date.now() - item.processStartTime;
+                const totalNeeded = (item.duration || 5) * 1000; 
+                let percentage = (elapsed / totalNeeded) * 100;
 
-    state.playerTurn = false;
-    renderBoard();
+                if (percentage >= 100) { percentage = 100; itemsToRemove.push(index); }
 
-    const skill = state.aiScore[state.ai] ?? 0.5;
-    const safe = unopened.filter(i => i !== state.bombIndex);
-    let pick;
-    if(Math.random() < skill && safe.length){
-      pick = safe[Math.floor(Math.random() * safe.length)];
-    } else {
-      pick = unopened[Math.floor(Math.random() * unopened.length)];
+                const bar = document.getElementById(`prog-bar-${index}`);
+                const text = document.getElementById(`prog-text-${index}`);
+                if (bar && text) {
+                    bar.style.width = `${percentage}%`;
+                    text.innerText = `%${Math.floor(percentage)}`;
+                }
+            }
+        });
+
+        if (itemsToRemove.length > 0) {
+            isDeletingItem = true;
+            const newInventory = currentInv.filter((_, i) => !itemsToRemove.includes(i));
+            try { await updateDoc(doc(db, "users", auth.currentUser.uid), { inventory: newInventory }); } 
+            catch (e) { console.error(e); }
+            isDeletingItem = false;
+        }
     }
 
-    const hit = reveal(pick, 'ai');
-    renderBoard();
-    if(hit) return;
+    // --- ADMİN İŞLEMLERİ ---
+    document.getElementById('btn-add-product').onclick = async () => {
+        const name = document.getElementById('prod-name').value, price = parseInt(document.getElementById('prod-price').value);
+        const desc = document.getElementById('prod-desc').value, alertMsg = document.getElementById('prod-alert').value;
+        const duration = parseInt(document.getElementById('prod-duration').value) || 5; 
 
-    state.playerTurn = true;
-    renderBoard();
-    statusText.textContent = 'Sıra sende. Sadece 1 cips seçebilirsin.';
-  }
+        if (name && price && desc && alertMsg) {
+            await addDoc(collection(db, "products"), { name, price, desc, alertMsg, duration });
+            alert("Ürün başarıyla eklendi!");
+            
+            // Kutuları Temizle
+            document.getElementById('prod-name').value = ""; document.getElementById('prod-price').value = "";
+            document.getElementById('prod-desc').value = ""; document.getElementById('prod-alert').value = "";
+            document.getElementById('prod-duration').value = "";
+        } else { alert("Tüm alanları doldurun."); }
+    };
 
-  renderPreview();
-  setAI('Gora');
-  updateScore();
+    document.getElementById('btn-add-promo').onclick = async () => {
+        const code = document.getElementById('promo-code').value, reward = parseInt(document.getElementById('promo-reward').value);
+        const uses = parseInt(document.getElementById('promo-uses').value), days = parseInt(document.getElementById('promo-days').value);
+        if (code && reward && uses && days) {
+            await setDoc(doc(db, "promos", code), { reward, uses, expiryDate: Date.now() + (days * 86400000) });
+            alert("Promosyon kodu oluşturuldu!");
+        } else { alert("Tüm alanları doldurun."); }
+    };
+
+    // --- PROMOSYON KODU KULLANMA ---
+    document.getElementById('btn-use-promo').onclick = async () => {
+        const code = document.getElementById('promo-input').value;
+        if (!code) return;
+
+        const promoRef = doc(db, "promos", code);
+        const promoSnap = await getDoc(promoRef);
+
+        if (promoSnap.exists()) {
+            const promoData = promoSnap.data();
+            if (currentUserDoc.usedPromos && currentUserDoc.usedPromos.includes(code)) return alert("Bu kodu zaten kullandınız!");
+            if (Date.now() > promoData.expiryDate) return alert("Süresi dolmuş!");
+            if (promoData.uses <= 0) return alert("Limit dolmuş!");
+
+            await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                coins: currentUserDoc.coins + promoData.reward,
+                usedPromos: [...(currentUserDoc.usedPromos || []), code]
+            });
+            await updateDoc(promoRef, { uses: promoData.uses - 1 });
+            alert(`Başarılı! ${promoData.reward} Coin kazandınız.`);
+            document.getElementById('promo-input').value = "";
+        } else { alert("Geçersiz kod!"); }
+    };
 </script>
+
 </body>
 </html>
