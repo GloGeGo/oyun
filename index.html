@@ -47,7 +47,7 @@
         .admin-panel h2 { color: #ff4444; margin-top: 0; }
         .admin-list-item { background: #222; border: 1px solid #555; padding: 10px; border-radius: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         
-        .terminal-box { background: #000; border: 1px solid #0f0; border-radius: 5px; padding: 10px; height: 200px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 14px; color: #0f0; margin-bottom: 10px; }
+        .terminal-box { background: #000; border: 1px solid #0f0; border-radius: 5px; padding: 10px; height: 300px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 14px; color: #0f0; margin-bottom: 10px; }
         .terminal-input { background: #000; border: 1px solid #0f0; color: #0f0; font-family: 'Courier New', Courier, monospace; font-size: 14px; outline: none; }
         .terminal-input::placeholder { color: #055; }
 
@@ -57,6 +57,16 @@
         .log-box { background: #111; border: 1px solid #555; border-radius: 5px; padding: 10px; max-height: 200px; overflow-y: auto; font-size: 14px; }
         .log-item { padding: 8px; border-bottom: 1px solid #333; }
         .log-item:last-child { border-bottom: none; }
+
+        /* YENİ: DESTEK BOTU TASARIMI */
+        .chatbot-btn { position: fixed; bottom: 20px; right: 20px; background: #2196F3; color: white; border: none; border-radius: 50px; padding: 15px 25px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; gap: 10px; width: auto; margin: 0; }
+        .chatbot-btn:hover { background: #1976D2; }
+        .chatbot-window { position: fixed; bottom: 80px; right: 20px; width: 320px; background: #2d2d2d; border: 1px solid #2196F3; border-radius: 10px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); overflow: hidden; }
+        .chatbot-header { background: #2196F3; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .chatbot-header button { background: none; border: none; color: white; font-weight: bold; cursor: pointer; width: auto; margin: 0; padding: 0; font-size: 18px; }
+        .chatbot-body { padding: 15px; }
+        .chatbot-option { background: #1e1e1e; border: 1px solid #444; color: #fff; text-align: left; margin-bottom: 8px; font-weight: normal; font-size: 14px; padding: 12px; }
+        .chatbot-option:hover { background: #333; border-color: #2196F3; }
     </style>
 </head>
 <body>
@@ -142,6 +152,17 @@
 
             <hr style="border: 1px solid #ff4444; margin: 30px 0 20px 0;">
             
+            <h3 style="color: #0cf;">Kullanıcı Envanter Yönetimi</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="admin-inv-username" placeholder="İncelenecek Kullanıcı Adı" style="margin: 0;">
+                <button id="btn-search-user-inv" style="width: 150px; margin: 0; background: #0cf; color: black;">Ara</button>
+            </div>
+            <div id="admin-user-inv-list" style="margin-bottom: 30px; background: #111; padding: 10px; border-radius: 5px; border: 1px solid #555;">
+                <p style='color:#bbb; margin: 0;'>Kullanıcı arayın...</p>
+            </div>
+
+            <hr style="border: 1px solid #ff4444; margin: 30px 0 20px 0;">
+
             <h3>📜 Son Satın Alım Geçmişi</h3>
             <div id="admin-purchase-logs" class="log-box"><p style='color:#bbb;'>Kayıt aranıyor...</p></div>
 
@@ -150,19 +171,32 @@
             <h3>Mevcut Ürünleri Yönet</h3>
             <div id="admin-product-list" style="margin-bottom: 20px;"></div>
 
-            <!-- YENİ: PROMOSYON KODU YÖNETİMİ -->
             <h3 style="color: #ffd700;">Mevcut Promosyon Kodlarını Yönet</h3>
             <div id="admin-promo-list" style="margin-bottom: 30px;"></div>
 
+            <!-- TERMINAL -->
             <h3 style="color: #0f0; border-top: 2px solid #555; padding-top: 20px;">💻 Sistem Terminali</h3>
             <div class="terminal-box" id="terminal-output">
-                <div>BsGo Root Terminali v1.1 Başlatıldı...</div>
-                <div>Geçerli Komutlar:</div>
-                <div>- /Stock Urun_Ad -Miktar Saniye</div>
-                <div>- /Account KullaniciAdi</div>
+                <div>BsGo Root Terminali v1.3 Başlatıldı...</div>
+                <div>Canlı destek talepleri ve loglar buraya düşecektir.</div>
+                <div>Geçerli Komutlar: /Stock, /Account</div>
             </div>
             <input type="text" id="terminal-input" class="terminal-input" placeholder=">_ Komut girin..." autocomplete="off">
         </div>
+
+        <!-- YENİ: DESTEK BOTU -->
+        <button id="chatbot-btn" class="chatbot-btn">💬 Destek Botu</button>
+        <div id="chatbot-window" class="chatbot-window hidden">
+            <div class="chatbot-header">Destek Asistanı <button id="chatbot-close">✕</button></div>
+            <div class="chatbot-body">
+                <p style="margin-top: 0; font-weight: bold; color: #fff;">Sorununuz nedir?</p>
+                <button class="chatbot-option">Aldığım ürün dondu</button>
+                <button class="chatbot-option">Aldığım ürünü iade etmek istiyorum</button>
+                <button class="chatbot-option">Aldığım ürün Çalışmıyor</button>
+                <p id="chatbot-feedback" style="color: #4caf50; font-size: 14px; font-weight: bold; display: none; margin-bottom: 0; text-align: center;">Talebiniz iletildi!</p>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -199,7 +233,7 @@
     </div>
 </div>
 
-<!-- YENİ: Promosyon Düzenleme Modalı -->
+<!-- Promosyon Düzenleme -->
 <div id="edit-promo-modal" class="modal-overlay hidden">
     <div class="modal-content" style="border-color: #ffd700;">
         <h2 style="margin-top:0; color: #ffd700;">Promosyon Kodunu Düzenle</h2>
@@ -237,6 +271,7 @@
     let currentUserDoc = null;
     let progressInterval = null; 
     let activeStockDrops = {}; 
+    let activeAdminUserInvUnsub = null;
 
     document.getElementById('go-to-register').onclick = () => { document.getElementById('login-box').classList.add('hidden'); document.getElementById('register-box').classList.remove('hidden'); };
     document.getElementById('go-to-login').onclick = () => { document.getElementById('register-box').classList.add('hidden'); document.getElementById('login-box').classList.remove('hidden'); };
@@ -280,8 +315,7 @@
             onSnapshot(userDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     currentUserDoc = docSnap.data();
-                    const dbUsername = currentUserDoc.username || "Bilinmeyen";
-                    document.getElementById('user-name-display').innerText = dbUsername;
+                    document.getElementById('user-name-display').innerText = currentUserDoc.username || "Bilinmeyen";
                     document.getElementById('user-coins').innerText = currentUserDoc.coins || 0;
                     
                     const notifs = currentUserDoc.notifications || [];
@@ -290,23 +324,61 @@
                     if (unreadCount > 0) { badge.innerText = unreadCount; badge.classList.remove('hidden'); } 
                     else { badge.classList.add('hidden'); }
 
-                    const safeName = dbUsername.toLowerCase();
+                    const safeName = (currentUserDoc.username || "").toLowerCase();
                     const isAdmin = safeName.includes("alper") || safeName.includes("alper9119") || user.email.toLowerCase().includes("alper");
                     
                     if (isAdmin) {
                         document.getElementById('admin-panel').classList.remove('hidden');
                         loadAdminLogs(); 
+                        listenSupportTickets(); // YENİ: Terminal için destek taleplerini dinle
                     } else { document.getElementById('admin-panel').classList.add('hidden'); }
                     
                     renderInventory();
                     loadStore(isAdmin);
-                    loadPromos(isAdmin); // Promosyon listesini yükle
+                    loadPromos(isAdmin);
                 }
             });
         } else {
             document.getElementById('auth-section').classList.remove('hidden');
             document.getElementById('app-section').classList.add('hidden');
         }
+    });
+
+    // --- YENİ: DESTEK BOTU İŞLEMLERİ ---
+    document.getElementById('chatbot-btn').onclick = () => {
+        document.getElementById('chatbot-window').classList.toggle('hidden');
+    };
+    
+    document.getElementById('chatbot-close').onclick = () => {
+        document.getElementById('chatbot-window').classList.add('hidden');
+    };
+
+    document.querySelectorAll('.chatbot-option').forEach(btn => {
+        btn.onclick = async () => {
+            if (!currentUserDoc) return;
+            const message = btn.innerText;
+
+            try {
+                // Talebi veritabanına ekle
+                await addDoc(collection(db, "support_tickets"), {
+                    username: currentUserDoc.username,
+                    message: message,
+                    timestamp: Date.now()
+                });
+
+                // Kullanıcıya geri bildirim ver
+                const feedback = document.getElementById('chatbot-feedback');
+                feedback.style.display = 'block';
+                
+                setTimeout(() => {
+                    document.getElementById('chatbot-window').classList.add('hidden');
+                    feedback.style.display = 'none';
+                }, 1500);
+
+            } catch (e) {
+                console.error("Talep gönderilemedi: ", e);
+            }
+        };
     });
 
     // --- BİLDİRİMLER ---
@@ -357,7 +429,62 @@
         } catch(e) { alert("Hata: " + e.message); }
     };
 
-    // --- MAĞAZA VE PROMO YÖNETİMİ ---
+    // --- KULLANICI ENVANTER YÖNETİMİ ---
+    document.getElementById('btn-search-user-inv').onclick = async () => {
+        const uName = document.getElementById('admin-inv-username').value.trim();
+        if(!uName) return alert("Kullanıcı adı girin!");
+        
+        const q = query(collection(db, "users"), where("username", "==", uName));
+        const snap = await getDocs(q);
+        const listDiv = document.getElementById('admin-user-inv-list');
+        
+        if(snap.empty) {
+            listDiv.innerHTML = "<p style='color:#ff4444; margin:0;'>Kullanıcı bulunamadı!</p>";
+            return;
+        }
+        
+        const targetUserDoc = snap.docs[0];
+        const targetUserId = targetUserDoc.id;
+        
+        if(activeAdminUserInvUnsub) activeAdminUserInvUnsub(); 
+        
+        activeAdminUserInvUnsub = onSnapshot(doc(db, "users", targetUserId), (docSnap) => {
+            if(!docSnap.exists()) return;
+            
+            const userData = docSnap.data();
+            const inv = userData.inventory || [];
+            
+            listDiv.innerHTML = `<p style="color:#0cf; font-weight:bold; margin-top:0;">${userData.username} Adlı Kullanıcının Envanteri:</p>`;
+            
+            if(inv.length === 0) {
+                listDiv.innerHTML += `<p style='color:#bbb;'>Envanter tamamen boş.</p>`;
+                return;
+            }
+            
+            inv.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = "admin-list-item";
+                
+                let statusText = item.processStartTime ? `<span style="color:#ff9800; font-size:12px; margin-left:10px;">(İşleniyor...)</span>` : "";
+                
+                el.innerHTML = `
+                    <div><strong style="color:#fff;">${item.name}</strong> ${statusText}</div>
+                    <button id="admin-del-inv-${index}" style="margin:0; width:auto; padding:6px 12px; background:#ff4444;">Sil</button>
+                `;
+                listDiv.appendChild(el);
+                
+                document.getElementById(`admin-del-inv-${index}`).onclick = async () => {
+                    if(confirm(`"${item.name}" eşyasını ${userData.username} adlı kullanıcının envanterinden silmek istediğine emin misin?`)) {
+                        let currentInv = [...docSnap.data().inventory];
+                        currentInv.splice(index, 1); 
+                        await updateDoc(doc(db, "users", targetUserId), { inventory: currentInv });
+                    }
+                };
+            });
+        });
+    };
+
+    // --- MAĞAZA VE DİĞER FONKSİYONLAR ---
     function loadStore(isAdmin) {
         if(!currentUserDoc) return;
 
@@ -451,7 +578,6 @@
         });
     }
 
-    // YENİ: Promosyon Kodlarını Yükleme
     function loadPromos(isAdmin) {
         if(!isAdmin) return;
         
@@ -499,7 +625,6 @@
         });
     }
 
-    // CANLI STOK
     setInterval(() => {
         const now = Date.now();
         for (const [id, data] of Object.entries(activeStockDrops)) {
@@ -527,6 +652,31 @@
         const box = document.getElementById('terminal-output');
         box.innerHTML += `<div>${text}</div>`;
         box.scrollTop = box.scrollHeight;
+    }
+
+    // YENİ: Terminal için Destek Talebi Dinleyici
+    let initialSupportLoad = true;
+    function listenSupportTickets() {
+        const q = query(collection(db, "support_tickets"), orderBy("timestamp", "desc"), limit(5));
+        onSnapshot(q, (snapshot) => {
+            if (initialSupportLoad) {
+                // Sayfa ilk yüklendiğinde eski 5 mesajı sondan başa doğru yazdır (Eskiden yeniye)
+                const docs = [];
+                snapshot.forEach(doc => docs.push(doc.data()));
+                docs.reverse().forEach(data => {
+                    appendTerminal(`<span style="color:#ff9800;">[DESTEK] ${data.username}: ${data.message}</span>`);
+                });
+                initialSupportLoad = false;
+            } else {
+                // Sadece yeni eklenenleri canlı olarak terminale düşür
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        appendTerminal(`<span style="color:#ff9800;">[YENİ DESTEK] ${data.username}: ${data.message}</span>`);
+                    }
+                });
+            }
+        });
     }
 
     document.getElementById('terminal-input').addEventListener('keypress', async (e) => {
@@ -657,7 +807,6 @@
         } else { alert("Lütfen tüm alanları doldurun."); }
     };
 
-    // YENİ: Promosyon Kaydet ve Düzenle
     document.getElementById('btn-add-promo').onclick = async () => {
         const code = document.getElementById('promo-code').value.trim();
         const reward = parseInt(document.getElementById('promo-reward').value);
@@ -667,7 +816,6 @@
         if (code && reward && uses && days) {
             await setDoc(doc(db, "promos", code), { reward, uses, expiryDate: Date.now() + (days * 86400000) });
             alert("Promosyon kodu oluşturuldu!");
-            // Yeni eklenen: Kutuları temizleme
             ['promo-code', 'promo-reward', 'promo-uses', 'promo-days'].forEach(id => document.getElementById(id).value = "");
         } else { alert("Tüm alanları doldurun."); }
     };
