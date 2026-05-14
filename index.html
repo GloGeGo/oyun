@@ -13,6 +13,7 @@
         input, select { background: #2d2d2d; color: white; border: 1px solid #444; }
         button { background: #4caf50; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background: #45a049; }
+        button:disabled { background: #555 !important; cursor: not-allowed; }
         .hidden { display: none !important; }
         
         /* KART TASARIMLARI */
@@ -21,7 +22,8 @@
         .card h4 { margin: 0 0 10px 0; color: #fff; }
         .card p { font-size: 14px; color: #bbb; margin-bottom: 10px; }
         .price { color: #ffd700; font-weight: bold; margin-bottom: 10px; }
-        .stock-badge { background: #ff9800; color: #000; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; position: absolute; top: 10px; right: 10px; }
+        .stock-badge { background: #ff9800; color: #000; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; position: absolute; top: 10px; right: 10px; transition: 0.3s; }
+        .stock-empty { background: #ff4444; color: white; }
         
         /* İLERLEME ÇUBUĞU */
         .progress-container { background: #444; border-radius: 5px; margin: 10px 0; height: 15px; width: 100%; overflow: hidden; position: relative; }
@@ -43,10 +45,10 @@
         /* ADMİN PANELİ & TERMINAL */
         .admin-panel { background: #3d2a2a; border: 1px solid #ff4444; padding: 20px; border-radius: 8px; margin-top: 20px; }
         .admin-panel h2 { color: #ff4444; margin-top: 0; }
-        .admin-list-item { background: #222; border: 1px solid #555; padding: 10px; border-radius: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .admin-list-item { background: #222; border: 1px solid #555; padding: 10px; border-radius: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         
         .terminal-box { background: #000; border: 1px solid #0f0; border-radius: 5px; padding: 10px; height: 200px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 14px; color: #0f0; margin-bottom: 10px; }
-        .terminal-input { background: #000; border: 1px solid #0f0; color: #0f0; font-family: 'Courier New', Courier, monospace; font-size: 14px; }
+        .terminal-input { background: #000; border: 1px solid #0f0; color: #0f0; font-family: 'Courier New', Courier, monospace; font-size: 14px; outline: none; }
         .terminal-input::placeholder { color: #055; }
 
         /* MODALLAR & SCROLL */
@@ -113,7 +115,6 @@
                     <h3>Yeni Ürün Ekle</h3>
                     <input type="text" id="prod-name" placeholder="Ürün Adı">
                     <input type="number" id="prod-price" placeholder="Fiyat (Coin)">
-                    <!-- YENİ: Stok Ekleme -->
                     <input type="number" id="prod-stock" placeholder="Toplam Stok Adedi">
                     <input type="text" id="prod-desc" placeholder="Ürün Açıklaması">
                     <input type="text" id="prod-alert" placeholder="Kullanılınca Çıkacak Uyarı Mesajı">
@@ -147,19 +148,25 @@
             <hr style="border: 1px solid #ff4444; margin: 30px 0 20px 0;">
             
             <h3>Mevcut Ürünleri Yönet</h3>
-            <div id="admin-product-list" style="margin-bottom: 30px;"></div>
+            <div id="admin-product-list" style="margin-bottom: 20px;"></div>
 
-            <!-- YENİ: TERMİNAL -->
+            <!-- YENİ: PROMOSYON KODU YÖNETİMİ -->
+            <h3 style="color: #ffd700;">Mevcut Promosyon Kodlarını Yönet</h3>
+            <div id="admin-promo-list" style="margin-bottom: 30px;"></div>
+
             <h3 style="color: #0f0; border-top: 2px solid #555; padding-top: 20px;">💻 Sistem Terminali</h3>
             <div class="terminal-box" id="terminal-output">
-                <div>BsGo Root Terminali v1.0 Başlatıldı...</div>
-                <div>Komutları girmek için aşağıdaki alanı kullanın.</div>
+                <div>BsGo Root Terminali v1.1 Başlatıldı...</div>
+                <div>Geçerli Komutlar:</div>
+                <div>- /Stock Urun_Ad -Miktar Saniye</div>
+                <div>- /Account KullaniciAdi</div>
             </div>
-            <input type="text" id="terminal-input" class="terminal-input" placeholder=">_ /Stock Urun_Ad -100 30 VEYA /Account Alper">
+            <input type="text" id="terminal-input" class="terminal-input" placeholder=">_ Komut girin..." autocomplete="off">
         </div>
     </div>
 </div>
 
+<!-- MODALLAR -->
 <div id="notifs-modal" class="modal-overlay hidden">
     <div class="modal-content" style="border-color: #2196F3;">
         <h2 style="margin-top:0; color: #2196F3;">Bildirimleriniz</h2>
@@ -176,6 +183,7 @@
     </div>
 </div>
 
+<!-- Ürün Düzenleme -->
 <div id="edit-modal" class="modal-overlay hidden">
     <div class="modal-content" style="border-color: #ff9800;">
         <h2 style="margin-top:0; color: #ff9800;">Ürünü Düzenle</h2>
@@ -188,6 +196,20 @@
         <input type="number" id="edit-prod-duration" placeholder="Silinme Süresi (Saniye)">
         <button id="btn-save-edit" style="background: #ff9800; color: black;">Güncelle</button>
         <button onclick="document.getElementById('edit-modal').classList.add('hidden')" style="background: #444;">İptal Et</button>
+    </div>
+</div>
+
+<!-- YENİ: Promosyon Düzenleme Modalı -->
+<div id="edit-promo-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="border-color: #ffd700;">
+        <h2 style="margin-top:0; color: #ffd700;">Promosyon Kodunu Düzenle</h2>
+        <input type="hidden" id="edit-promo-id">
+        <p style="color: #aaa; text-align: left; margin: 0 0 5px 0;">Kod: <strong id="edit-promo-code-display" style="color: #fff;"></strong></p>
+        <input type="number" id="edit-promo-reward" placeholder="Verilecek Coin">
+        <input type="number" id="edit-promo-uses" placeholder="Kaç Kere Kullanılabilir?">
+        <input type="number" id="edit-promo-days" placeholder="Kaç Gün Geçerli?">
+        <button id="btn-save-edit-promo" style="background: #ffd700; color: black;">Güncelle</button>
+        <button onclick="document.getElementById('edit-promo-modal').classList.add('hidden')" style="background: #444;">İptal Et</button>
     </div>
 </div>
 
@@ -214,7 +236,7 @@
 
     let currentUserDoc = null;
     let progressInterval = null; 
-    let activeStockDrops = {}; // Canlı stok animasyonlarını tutar
+    let activeStockDrops = {}; 
 
     document.getElementById('go-to-register').onclick = () => { document.getElementById('login-box').classList.add('hidden'); document.getElementById('register-box').classList.remove('hidden'); };
     document.getElementById('go-to-login').onclick = () => { document.getElementById('register-box').classList.add('hidden'); document.getElementById('login-box').classList.remove('hidden'); };
@@ -278,6 +300,7 @@
                     
                     renderInventory();
                     loadStore(isAdmin);
+                    loadPromos(isAdmin); // Promosyon listesini yükle
                 }
             });
         } else {
@@ -334,7 +357,7 @@
         } catch(e) { alert("Hata: " + e.message); }
     };
 
-    // --- MAĞAZA YÜKLEME ---
+    // --- MAĞAZA VE PROMO YÖNETİMİ ---
     function loadStore(isAdmin) {
         if(!currentUserDoc) return;
 
@@ -343,30 +366,29 @@
             const adminList = document.getElementById('admin-product-list');
             
             storeGrid.innerHTML = ""; adminList.innerHTML = "";
-            activeStockDrops = {}; // Animasyon listesini sıfırla
+            activeStockDrops = {};
 
             snapshot.forEach((productDoc) => {
                 const prod = productDoc.data();
                 const id = productDoc.id;
                 const stock = prod.stock || 0;
                 
-                // Canlı düşüş animasyonu devam ediyor mu?
                 const isDropActive = prod.visualDrop && (Date.now() < prod.visualDrop.startTime + prod.visualDrop.duration);
                 
-                // Eğer stok bitmişse ve animasyon da yoksa, hiç gösterme (Adminse temizle)
                 if (stock <= 0 && !isDropActive) {
                     if (isAdmin) deleteDoc(doc(db, "products", id));
                     return; 
                 }
 
                 const displayStock = isDropActive ? prod.visualDrop.startStock : stock;
+                const badgeClass = stock > 0 ? "stock-badge" : "stock-badge stock-empty";
+                const badgeText = stock > 0 ? `📦 Stok: <span id="stock-display-${id}">${displayStock}</span>` : "Tükendi";
 
-                // Kullanıcı Kartı
                 const card = document.createElement('div');
                 card.className = "card";
                 card.id = `card-${id}`;
                 card.innerHTML = `
-                    <div class="stock-badge">📦 Stok: <span id="stock-display-${id}">${displayStock}</span></div>
+                    <div class="${badgeClass}" id="badge-${id}">${badgeText}</div>
                     <h4>${prod.name}</h4><p>${prod.desc}</p>
                     <div class="price">🪙 ${prod.price} Coin</div>
                     <button id="buy-${id}">Satın Al</button>
@@ -377,30 +399,27 @@
                     activeStockDrops[id] = prod.visualDrop;
                 }
 
-                // SATIN ALMA İŞLEMİ (Tek alışta silinmez, stoğu 1 düşürür)
-                document.getElementById(`buy-${id}`).onclick = async () => {
-                    if (prod.stock <= 0) return alert("Bu ürünün stoğu tükendi!");
+                const buyBtn = document.getElementById(`buy-${id}`);
+                if (stock <= 0) {
+                    buyBtn.innerText = "Stok Tükendi"; buyBtn.disabled = true;
+                } else {
+                    buyBtn.onclick = async () => {
+                        if (currentUserDoc.coins >= prod.price) {
+                            try {
+                                await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                                    coins: currentUserDoc.coins - prod.price,
+                                    inventory: [...currentUserDoc.inventory, prod]
+                                });
+                                
+                                await updateDoc(doc(db, "products", id), { stock: stock - 1 });
+                                await addDoc(collection(db, "purchases"), { username: currentUserDoc.username, productName: prod.name, timestamp: Date.now() });
 
-                    if (currentUserDoc.coins >= prod.price) {
-                        try {
-                            await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                                coins: currentUserDoc.coins - prod.price,
-                                inventory: [...currentUserDoc.inventory, prod]
-                            });
-                            
-                            const newStock = prod.stock - 1;
-                            await updateDoc(doc(db, "products", id), { stock: newStock });
-                            
-                            await addDoc(collection(db, "purchases"), {
-                                username: currentUserDoc.username, productName: prod.name, timestamp: Date.now()
-                            });
+                                alert("Satın alma başarılı! Envantere eklendi.");
+                            } catch(e) { console.error("Hata:", e); }
+                        } else { alert("Yetersiz Coin!"); }
+                    };
+                }
 
-                            alert("Satın alma başarılı! Envantere eklendi.");
-                        } catch(e) { console.error("Hata:", e); }
-                    } else { alert("Yetersiz Coin!"); }
-                };
-
-                // Admin Yönetim Listesi
                 if (isAdmin) {
                     const listItem = document.createElement('div');
                     listItem.className = "admin-list-item";
@@ -413,10 +432,7 @@
                     `;
                     adminList.appendChild(listItem);
 
-                    document.getElementById(`del-${id}`).onclick = async () => {
-                        if(confirm(`Emin misin?`)) await deleteDoc(doc(db, "products", id));
-                    };
-
+                    document.getElementById(`del-${id}`).onclick = async () => { if(confirm(`Emin misin?`)) await deleteDoc(doc(db, "products", id)); };
                     document.getElementById(`edit-${id}`).onclick = () => {
                         document.getElementById('edit-prod-id').value = id;
                         document.getElementById('edit-prod-name').value = prod.name;
@@ -435,7 +451,55 @@
         });
     }
 
-    // CANLI STOK DÜŞÜŞÜ (Veritabanı yakmaz, tarayıcıda canlı hesaplar)
+    // YENİ: Promosyon Kodlarını Yükleme
+    function loadPromos(isAdmin) {
+        if(!isAdmin) return;
+        
+        onSnapshot(collection(db, "promos"), (snapshot) => {
+            const adminPromoList = document.getElementById('admin-promo-list');
+            adminPromoList.innerHTML = "";
+            
+            if(snapshot.empty) {
+                adminPromoList.innerHTML = "<p style='color:#bbb;'>Şu an hiç promosyon kodu yok.</p>";
+                return;
+            }
+
+            snapshot.forEach((promoDoc) => {
+                const code = promoDoc.id;
+                const data = promoDoc.data();
+                const daysLeft = Math.ceil((data.expiryDate - Date.now()) / 86400000);
+                const isExpired = daysLeft <= 0;
+
+                const listItem = document.createElement('div');
+                listItem.className = "admin-list-item";
+                listItem.innerHTML = `
+                    <div><strong style="color:#ffd700;">${code}</strong> - Ödül: ${data.reward} - Kalan: ${data.uses} - ${isExpired ? '<span style="color:#ff4444">Süresi Doldu</span>' : `Kalan Gün: ${daysLeft}`}</div>
+                    <div style="display:flex; gap:10px;">
+                        <button id="edit-promo-${code}" style="margin:0; width:auto; padding:8px; background:#ff9800; color:black;">Düzenle</button>
+                        <button id="del-promo-${code}" style="margin:0; width:auto; padding:8px; background:#ff4444;">Sil</button>
+                    </div>
+                `;
+                adminPromoList.appendChild(listItem);
+
+                document.getElementById(`del-promo-${code}`).onclick = async () => {
+                    if(confirm(`"${code}" kodunu silmek istediğine emin misin?`)) {
+                        await deleteDoc(doc(db, "promos", code));
+                    }
+                };
+
+                document.getElementById(`edit-promo-${code}`).onclick = () => {
+                    document.getElementById('edit-promo-id').value = code;
+                    document.getElementById('edit-promo-code-display').innerText = code;
+                    document.getElementById('edit-promo-reward').value = data.reward;
+                    document.getElementById('edit-promo-uses').value = data.uses;
+                    document.getElementById('edit-promo-days').value = daysLeft > 0 ? daysLeft : 0;
+                    document.getElementById('edit-promo-modal').classList.remove('hidden');
+                };
+            });
+        });
+    }
+
+    // CANLI STOK
     setInterval(() => {
         const now = Date.now();
         for (const [id, data] of Object.entries(activeStockDrops)) {
@@ -448,7 +512,7 @@
                 delete activeStockDrops[id];
                 if (data.endStock <= 0) {
                     const card = document.getElementById(`card-${id}`);
-                    if(card) card.style.display = 'none'; // Stok 0 olunca gözden kaybolur
+                    if(card) card.style.display = 'none'; 
                 }
             } else {
                 const ratio = elapsed / data.duration;
@@ -458,7 +522,7 @@
         }
     }, 100);
 
-    // --- TERMINAL SİSTEMİ ---
+    // --- TERMINAL ---
     function appendTerminal(text) {
         const box = document.getElementById('terminal-output');
         box.innerHTML += `<div>${text}</div>`;
@@ -469,7 +533,7 @@
         if (e.key === 'Enter') {
             const cmd = e.target.value.trim();
             e.target.value = '';
-            appendTerminal(`>_ ${cmd}`);
+            appendTerminal(`<span style="color:#fff;">>_ ${cmd}</span>`);
             
             const args = cmd.split(' ');
             const action = args[0];
@@ -479,27 +543,49 @@
                 const pAmountStr = args[2];
                 const pTime = parseInt(args[3]);
                 
-                if(!pName || !pAmountStr || isNaN(pTime)) {
-                    return appendTerminal("Hata: Komut yapısı -> /Stock Urun_Ad -100 30");
-                }
-                const amount = parseInt(pAmountStr.replace('-', '')); 
-                const dbName = pName.replace(/_/g, ' '); // Alt çizgileri boşluğa çevirir
+                if(!pName || !pAmountStr || isNaN(pTime)) return appendTerminal("Hata: Komut yapısı -> /Stock Urun_Ad -100 30");
+                
+                const amount = Math.abs(parseInt(pAmountStr)); 
+                const dbName = pName.replace(/_/g, ' '); 
                 
                 const q = query(collection(db, "products"), where("name", "==", dbName));
                 const snap = await getDocs(q);
                 if(snap.empty) return appendTerminal(`Hata: '${dbName}' adında ürün bulunamadı.`);
                 
                 const pDoc = snap.docs[0];
-                const currentStock = pDoc.data().stock || 0;
-                const newStock = Math.max(0, currentStock - amount);
+                const startStock = pDoc.data().stock || 0;
                 
-                // Tek bir write ile animasyon emri verilir
-                await updateDoc(doc(db, "products", pDoc.id), {
-                    stock: newStock,
-                    visualDrop: { startStock: currentStock, endStock: newStock, startTime: Date.now(), duration: pTime * 1000 }
-                });
+                if (startStock <= 0) return appendTerminal(`Hata: '${dbName}' zaten bitmiş durumda.`);
+
+                appendTerminal(`Başlatıldı: '${dbName}' stoğu ${pTime} saniye içinde toplam ${amount} adet düşürülecek...`);
+
+                let remainingDrop = amount;
+                let dropPerSecond = Math.ceil(amount / pTime); 
                 
-                appendTerminal(`Başarılı: ${dbName} stoğu ${pTime} saniye içinde ${amount} adet düşürülecek.`);
+                let dropTimer = setInterval(async () => {
+                    if (remainingDrop <= 0) {
+                        clearInterval(dropTimer);
+                        appendTerminal(`Tamamlandı: '${dbName}' ürününün stok düşüşü başarıyla bitti.`);
+                        return;
+                    }
+
+                    let currentDrop = Math.min(dropPerSecond, remainingDrop);
+                    remainingDrop -= currentDrop;
+
+                    const prodRef = doc(db, "products", pDoc.id);
+                    const currentSnap = await getDoc(prodRef);
+                    
+                    if(currentSnap.exists()) {
+                        let currentFirebaseStock = currentSnap.data().stock || 0;
+                        let newStock = Math.max(0, currentFirebaseStock - currentDrop);
+                        await updateDoc(prodRef, { stock: newStock });
+                        
+                        if(newStock <= 0) {
+                            clearInterval(dropTimer);
+                            appendTerminal(`Bilgi: '${dbName}' stokları tamamen sıfırlandı, işlem durduruldu.`);
+                        }
+                    }
+                }, 1000); 
             } 
             else if (action === '/Account') {
                 const uName = args[1];
@@ -517,13 +603,11 @@
                 appendTerminal(`🎁 Kullanılan Kodlar: ${uData.usedPromos && uData.usedPromos.length > 0 ? uData.usedPromos.join(', ') : 'Yok'}`);
                 appendTerminal(`-------------------------`);
             }
-            else {
-                appendTerminal("Bilinmeyen komut. Geçerli komutlar: /Stock, /Account");
-            }
+            else { appendTerminal("Bilinmeyen komut. Geçerli komutlar: /Stock, /Account"); }
         }
     });
 
-    // ADMİN: LOGLAR VE DİĞER İŞLEMLER
+    // ADMİN: İŞLEMLER
     function loadAdminLogs() {
         const q = query(collection(db, "purchases"), orderBy("timestamp", "desc"), limit(50));
         onSnapshot(q, (snapshot) => {
@@ -546,7 +630,7 @@
 
     document.getElementById('btn-add-product').onclick = async () => {
         const name = document.getElementById('prod-name').value, price = parseInt(document.getElementById('prod-price').value);
-        const stock = parseInt(document.getElementById('prod-stock').value);
+        const stock = parseInt(document.getElementById('prod-stock').value) || 0;
         const desc = document.getElementById('prod-desc').value, alertMsg = document.getElementById('prod-alert').value;
         const duration = parseInt(document.getElementById('prod-duration').value) || 5; 
 
@@ -561,7 +645,7 @@
         const id = document.getElementById('edit-prod-id').value;
         const name = document.getElementById('edit-prod-name').value;
         const price = parseInt(document.getElementById('edit-prod-price').value);
-        const stock = parseInt(document.getElementById('edit-prod-stock').value);
+        const stock = parseInt(document.getElementById('edit-prod-stock').value) || 0;
         const desc = document.getElementById('edit-prod-desc').value;
         const alertMsg = document.getElementById('edit-prod-alert').value;
         const duration = parseInt(document.getElementById('edit-prod-duration').value) || 5;
@@ -571,6 +655,38 @@
             document.getElementById('edit-modal').classList.add('hidden');
             alert("Ürün başarıyla güncellendi!");
         } else { alert("Lütfen tüm alanları doldurun."); }
+    };
+
+    // YENİ: Promosyon Kaydet ve Düzenle
+    document.getElementById('btn-add-promo').onclick = async () => {
+        const code = document.getElementById('promo-code').value.trim();
+        const reward = parseInt(document.getElementById('promo-reward').value);
+        const uses = parseInt(document.getElementById('promo-uses').value);
+        const days = parseInt(document.getElementById('promo-days').value);
+        
+        if (code && reward && uses && days) {
+            await setDoc(doc(db, "promos", code), { reward, uses, expiryDate: Date.now() + (days * 86400000) });
+            alert("Promosyon kodu oluşturuldu!");
+            // Yeni eklenen: Kutuları temizleme
+            ['promo-code', 'promo-reward', 'promo-uses', 'promo-days'].forEach(id => document.getElementById(id).value = "");
+        } else { alert("Tüm alanları doldurun."); }
+    };
+
+    document.getElementById('btn-save-edit-promo').onclick = async () => {
+        const code = document.getElementById('edit-promo-id').value;
+        const reward = parseInt(document.getElementById('edit-promo-reward').value);
+        const uses = parseInt(document.getElementById('edit-promo-uses').value);
+        const days = parseInt(document.getElementById('edit-promo-days').value);
+
+        if (reward >= 0 && uses >= 0 && days >= 0) {
+            await updateDoc(doc(db, "promos", code), {
+                reward,
+                uses,
+                expiryDate: Date.now() + (days * 86400000)
+            });
+            document.getElementById('edit-promo-modal').classList.add('hidden');
+            alert("Promosyon kodu güncellendi!");
+        } else { alert("Geçerli değerler girin."); }
     };
 
     // ENVANTER VE CANLI İŞLENİYOR
@@ -646,7 +762,7 @@
 
     // PROMOSYON KODU KULLANMA
     document.getElementById('btn-use-promo').onclick = async () => {
-        const code = document.getElementById('promo-input').value;
+        const code = document.getElementById('promo-input').value.trim();
         if (!code) return;
         const promoRef = doc(db, "promos", code);
         const promoSnap = await getDoc(promoRef);
